@@ -1,0 +1,94 @@
+diff --git a/cosyvoice/utils/train_utils.py b/cosyvoice/utils/train_utils.py
+index b0dbcf9..ca98573 100644
+--- a/cosyvoice/utils/train_utils.py
++++ b/cosyvoice/utils/train_utils.py
+@@ -377,3 +377,89 @@ def log_per_save(writer, info_dict):
+             writer.add_scalar('{}/{}'.format(tag, k), info_dict[k], step + 1)
+         for k, v in loss_dict.items():
+             writer.add_scalar('{}/{}'.format(tag, k), v, step + 1)
++
++
++def _coerce_float(value):
++    try:
++        return float(value)
++    except (TypeError, ValueError):
++        return None
++
++
++def _select_cv_metric(loss_dict, monitor):
++    if not loss_dict:
++        return None, None
++    if monitor in loss_dict:
++        return monitor, loss_dict[monitor]
++    keys = sorted(loss_dict.keys())
++    if not keys:
++        return None, None
++    return keys[0], loss_dict[keys[0]]
++
++
++def update_cv_monitor(info_dict, loss_dict):
++    """Track CV metric trends and set overfitting flags in info_dict."""
++    monitor = info_dict.get('cv_monitor', 'loss')
++    metric_name, metric_value = _select_cv_metric(loss_dict, monitor)
++    metric_value = _coerce_float(metric_value)
++    if metric_name is None or metric_value is None:
++        return None
++
++    higher_is_better = bool(info_dict.get('cv_higher_is_better', False))
++    min_delta = _coerce_float(info_dict.get('cv_min_delta', 0.0)) or 0.0
++    patience = int(info_dict.get('cv_patience', 3))
++    warmup = int(info_dict.get('cv_warmup', 0))
++
++    info_dict.setdefault('cv_monitor', monitor)
++    info_dict.setdefault('cv_higher_is_better', higher_is_better)
++    info_dict.setdefault('cv_min_delta', min_delta)
++    info_dict.setdefault('cv_patience', patience)
++    info_dict.setdefault('cv_warmup', warmup)
++    info_dict['cv_monitor_used'] = metric_name
++    info_dict['cv_metric'] = metric_value
++
++    best_key = f'best_cv_{metric_name}'
++    best_value = _coerce_float(info_dict.get(best_key))
++
++    if best_value is None:
++        improved = True
++    elif higher_is_better:
++        improved = metric_value > best_value + min_delta
++    else:
++        improved = metric_value < best_value - min_delta
++
++    if improved:
++        best_value = metric_value
++        info_dict[best_key] = best_value
++        info_dict['best_cv_epoch'] = info_dict.get('epoch', 0)
++        info_dict['cv_no_improve_epochs'] = 0
++    else:
++        info_dict['cv_no_improve_epochs'] = int(info_dict.get('cv_no_improve_epochs', 0)) + 1
++
++    no_improve = int(info_dict.get('cv_no_improve_epochs', 0))
++    prev_overfit = int(info_dict.get('cv_overfit_flag', 0))
++    overfit_flag = 1 if patience > 0 and info_dict.get('epoch', 0) >= warmup and no_improve >= patience else 0
++    info_dict['cv_overfit_flag'] = overfit_flag
++    overfit_start = overfit_flag == 1 and prev_overfit == 0
++
++    return {
++        'metric_name': metric_name,
++        'metric_value': metric_value,
++        'best_value': best_value,
++        'no_improve': no_improve,
++        'overfit_flag': overfit_flag,
++        'overfit_start': overfit_start,
++        'higher_is_better': higher_is_better,
++        'min_delta': min_delta,
++        'patience': patience,
++    }
++
++
++def log_cv_monitor(writer, info_dict, monitor_info):
++    if writer is None or monitor_info is None:
++        return
++    step = info_dict.get('step', 0)
++    metric_name = monitor_info['metric_name']
++    writer.add_scalar(f'CV/best_{metric_name}', monitor_info['best_value'], step + 1)
++    writer.add_scalar('CV/no_improve_epochs', monitor_info['no_improve'], step + 1)
++    writer.add_scalar('CV/overfit_flag', monitor_info['overfit_flag'], step + 1)

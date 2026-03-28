@@ -1,0 +1,18 @@
+diff --git a/examples/libritts/cosyvoice3/conf/ds_stage2.json b/examples/libritts/cosyvoice3/conf/ds_stage2.json
+index 2b2de3d..c5b8dc4 100644
+--- a/examples/libritts/cosyvoice3/conf/ds_stage2.json
++++ b/examples/libritts/cosyvoice3/conf/ds_stage2.json
+@@ -33,10 +33,10 @@
+   "optimizer": {
+     "type": "AdamW",
+     "params": {
+-        "lr": 0.001,
++        "lr": 1e-5,
+         "weight_decay": 0.0001,
+         "torch_adam": true,
+         "adam_w_mode": true
+     }
+   }
+-}
+\ No newline at end of file
++}

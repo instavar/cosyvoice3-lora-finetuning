@@ -1,0 +1,26 @@
+# CosyVoice3 LoRA fine-tuning config overrides
+# Apply on top of the upstream cosyvoice3.yaml
+#
+# Key changes from full SFT:
+#   - LR: 5e-5 (up from 1e-5; LoRA adapts faster)
+#   - max_epoch: 20 (down from 200; best region is early)
+#   - cv_patience: 3 (hard stop, not just warning)
+#   - accum_grad: 2 (effective batch = 2)
+
+train_conf:
+    optim: adam
+    optim_conf:
+        lr: 5e-5
+    scheduler: constantlr
+    scheduler_conf:
+        warmup_steps: 500
+    max_epoch: 20
+    grad_clip: 5
+    accum_grad: 2
+    log_interval: 100
+    save_per_step: -1
+    cv_monitor: loss
+    cv_higher_is_better: false
+    cv_min_delta: 0.0
+    cv_patience: 3
+    cv_warmup: 0

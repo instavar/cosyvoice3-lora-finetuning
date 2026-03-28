@@ -1,0 +1,40 @@
+diff --git a/cosyvoice/utils/executor.py b/cosyvoice/utils/executor.py
+index f08fa09..e27db7d 100644
+--- a/cosyvoice/utils/executor.py
++++ b/cosyvoice/utils/executor.py
+@@ -20,7 +20,17 @@ import os
+ import torch
+ import torch.distributed as dist
+ 
+-from cosyvoice.utils.train_utils import update_parameter_and_lr, log_per_step, log_per_save, batch_forward, batch_backward, save_model, cosyvoice_join
++from cosyvoice.utils.train_utils import (
++    update_parameter_and_lr,
++    log_per_step,
++    log_per_save,
++    batch_forward,
++    batch_backward,
++    save_model,
++    cosyvoice_join,
++    update_cv_monitor,
++    log_cv_monitor,
++)
+ 
+ 
+ class Executor:
+@@ -171,6 +181,16 @@ class Executor:
+         for k, v in total_loss_dict.items():
+             total_loss_dict[k] = sum(v) / total_num_utts
+         info_dict['loss_dict'] = total_loss_dict
++        monitor_info = update_cv_monitor(info_dict, total_loss_dict)
+         log_per_save(writer, info_dict)
++        log_cv_monitor(writer, info_dict, monitor_info)
++        if monitor_info is not None and monitor_info['overfit_start'] and self.rank == 0:
++            logging.warning(
++                'Possible overfitting: CV %s has not improved for %d epochs (best=%.6f, current=%.6f).',
++                monitor_info['metric_name'],
++                monitor_info['no_improve'],
++                monitor_info['best_value'],
++                monitor_info['metric_value'],
++            )
+         model_name = 'epoch_{}_whole'.format(self.epoch) if on_batch_end else 'epoch_{}_step_{}'.format(self.epoch, self.step + 1)
+         save_model(model, model_name, info_dict)

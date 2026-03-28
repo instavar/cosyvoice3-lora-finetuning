@@ -1,0 +1,16 @@
+diff --git a/examples/libritts/cosyvoice3/conf/cosyvoice3.yaml b/examples/libritts/cosyvoice3/conf/cosyvoice3.yaml
+index 16ab187..06a9eeb 100644
+--- a/examples/libritts/cosyvoice3/conf/cosyvoice3.yaml
++++ b/examples/libritts/cosyvoice3/conf/cosyvoice3.yaml
+@@ -206,6 +206,11 @@ train_conf:
+     accum_grad: 2
+     log_interval: 100
+     save_per_step: -1
++    cv_monitor: loss
++    cv_higher_is_better: false
++    cv_min_delta: 0.0
++    cv_patience: 3
++    cv_warmup: 0
+ 
+ # gan train conf
+ train_conf_gan:
