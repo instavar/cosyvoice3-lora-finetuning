@@ -135,6 +135,17 @@ def apply_lora_to_cosyvoice3(model, args):
         lora_cfg = LoraConfig(**lora_kwargs)
         peft_model = get_peft_model(base, lora_cfg)
     encoder.model = peft_model
+
+    # After PEFT wrapping, the upstream CosyVoice3LM forward path accesses
+    # encoder.model.model.embed_tokens, expecting Qwen2Model. But now:
+    #   encoder.model = PeftModel
+    #   encoder.model.model = Qwen2ForCausalLM  (not Qwen2Model)
+    #   encoder.model.model.model = Qwen2Model   (has embed_tokens)
+    # Fix: proxy embed_tokens on Qwen2ForCausalLM so the upstream path works.
+    qwen2_causal = peft_model.model  # Qwen2ForCausalLM
+    if not hasattr(qwen2_causal, "embed_tokens") and hasattr(qwen2_causal, "model"):
+        qwen2_causal.embed_tokens = qwen2_causal.model.embed_tokens
+
     return peft_model
 
 
