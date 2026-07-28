@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import builtins
+import json
 import logging
 import os
+import threading
 from pathlib import Path
+from typing import Iterable, Union
 
 import torch
 import torchaudio
@@ -45,7 +49,9 @@ def expose_embed_tokens_for_cosyvoice(peft_model: PeftModel) -> None:
     """Restore the attribute path used by CosyVoice after PEFT wrapping."""
     qwen2_causal = peft_model.model
     if not hasattr(qwen2_causal, "embed_tokens") and hasattr(qwen2_causal, "model"):
-        qwen2_causal.embed_tokens = qwen2_causal.model.embed_tokens
+        # Bypass nn.Module.__setattr__ so this compatibility alias is not
+        # registered as a duplicate submodule in state_dict exports.
+        object.__setattr__(qwen2_causal, "embed_tokens", qwen2_causal.model.embed_tokens)
 
 
 def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> PeftModel:
@@ -65,36 +71,110 @@ def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> PeftModel:
 
 def enable_vllm_with_merged_lora(
     cosyvoice: CosyVoice3,
-    peft_model: PeftModel,
+    peft_model: PeftModel | None,
     vllm_dir: str,
+    reuse_vllm_dir: bool = False,
 ) -> None:
     """Merge the adapter, export the merged LLM, and enable CosyVoice vLLM."""
+    # Dynamic custom-model registration is process-local. Keep the V1 engine
+    # in-process so a spawned worker does not lose the CosyVoice registry entry.
+    os.environ.setdefault("VLLM_ENABLE_V1_MULTIPROCESSING", "0")
+
     export_dir = Path(vllm_dir)
-    if export_dir.exists():
+    if export_dir.exists() and not reuse_vllm_dir:
         raise FileExistsError(
             f"vLLM export directory already exists: {export_dir}. "
-            "Use a new directory so a stale export cannot be loaded for this adapter."
+            "Use a new directory or pass --reuse-vllm-dir after verifying the export."
         )
 
-    try:
-        merged_model = peft_model.merge_and_unload(safe_merge=True)
-    except TypeError:
-        merged_model = peft_model.merge_and_unload()
-
     encoder = cosyvoice.model.llm.llm
-    encoder.model = merged_model
+    if not export_dir.exists():
+        if peft_model is None:
+            raise ValueError("A loaded PEFT model is required to create a new vLLM export")
+        try:
+            merged_model = peft_model.merge_and_unload(safe_merge=True)
+        except TypeError:
+            merged_model = peft_model.merge_and_unload()
+        encoder.model = merged_model
 
+    # Older CosyVoice adapters relied on these names leaking from vLLM's
+    # wildcard Qwen2 import. Current vLLM releases no longer export them.
+    missing = object()
+    previous_union = getattr(builtins, "Union", missing)
+    previous_iterable = getattr(builtins, "Iterable", missing)
+    builtins.Union = Union
+    builtins.Iterable = Iterable
     try:
-        from vllm import ModelRegistry
+        from vllm import EngineArgs, LLMEngine, ModelRegistry
+        from cosyvoice.vllm import cosyvoice2 as cosyvoice2_module
         from cosyvoice.vllm.cosyvoice2 import CosyVoice2ForCausalLM
+        from cosyvoice.utils.file_utils import export_cosyvoice2_vllm
     except ImportError as exc:
         raise ImportError(
             "vLLM inference requires a CosyVoice-supported vLLM installation. "
             "See the repository README for supported version pairs."
         ) from exc
+    finally:
+        if previous_union is missing:
+            del builtins.Union
+        else:
+            builtins.Union = previous_union
+        if previous_iterable is missing:
+            del builtins.Iterable
+        else:
+            builtins.Iterable = previous_iterable
+
+    def embed_input_ids(model, input_ids):
+        return model.model.embed_tokens(input_ids)
+
+    # vLLM 0.15 requires this interface and its Qwen2Model no longer exposes
+    # the older get_input_embeddings helper used by CosyVoice.
+    CosyVoice2ForCausalLM.embed_input_ids = embed_input_ids
 
     ModelRegistry.register_model("CosyVoice2ForCausalLM", CosyVoice2ForCausalLM)
-    cosyvoice.model.load_vllm(str(export_dir))
+
+    # Upstream only rewrites this architecture when the LM head uses a bias.
+    # Export first and normalize it for bias-free CosyVoice3 checkpoints too.
+    if not export_dir.exists():
+        export_cosyvoice2_vllm(cosyvoice.model.llm, str(export_dir), cosyvoice.model.device)
+    config_path = export_dir / "config.json"
+    with config_path.open("r", encoding="utf-8") as handle:
+        config = json.load(handle)
+    config["architectures"] = ["CosyVoice2ForCausalLM"]
+    with config_path.open("w", encoding="utf-8") as handle:
+        json.dump(config, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+
+    original_parallel_lm_head = cosyvoice2_module.ParallelLMHead
+
+    def parallel_lm_head_with_exported_bias(
+        num_embeddings: int,
+        embedding_dim: int,
+        _legacy_bias: bool = False,
+        **kwargs,
+    ):
+        return original_parallel_lm_head(
+            num_embeddings,
+            embedding_dim,
+            bias=bool(config.get("use_bias", False)),
+            **kwargs,
+        )
+
+    cosyvoice2_module.ParallelLMHead = parallel_lm_head_with_exported_bias
+
+    # Release the duplicate PyTorch LLM before vLLM profiles free memory.
+    # Upstream releases it after engine creation, which invalidates V1's
+    # in-process memory snapshot as GPU memory rises during profiling.
+    del cosyvoice.model.llm.llm.model.model.layers
+    torch.cuda.empty_cache()
+    engine_args = EngineArgs(
+        model=str(export_dir),
+        skip_tokenizer_init=True,
+        enable_prompt_embeds=True,
+        gpu_memory_utilization=0.2,
+    )
+    cosyvoice.model.llm.vllm = LLMEngine.from_engine_args(engine_args)
+    cosyvoice.model.llm.lock = threading.Lock()
 
 
 def main() -> None:
@@ -114,6 +194,11 @@ def main() -> None:
         default="",
         help="Export the merged base plus LoRA model here and use vLLM for LLM decoding",
     )
+    parser.add_argument(
+        "--reuse-vllm-dir",
+        action="store_true",
+        help="Reuse an existing --vllm-dir instead of creating a fresh merged export",
+    )
     parser.add_argument("--no-text-frontend", dest="text_frontend", action="store_false", help="Disable text frontend")
     parser.set_defaults(text_frontend=True)
     args = parser.parse_args()
@@ -131,9 +216,16 @@ def main() -> None:
         raise FileNotFoundError(f"Prompt wav not found: {prompt_wav}")
 
     cosyvoice = CosyVoice3(args.pretrained_dir, fp16=args.fp16)
-    peft_model = apply_lora_to_cosyvoice3(cosyvoice, args.lora_dir)
+    peft_model = None
+    if not (args.vllm_dir and args.reuse_vllm_dir):
+        peft_model = apply_lora_to_cosyvoice3(cosyvoice, args.lora_dir)
     if args.vllm_dir:
-        enable_vllm_with_merged_lora(cosyvoice, peft_model, args.vllm_dir)
+        enable_vllm_with_merged_lora(
+            cosyvoice,
+            peft_model,
+            args.vllm_dir,
+            reuse_vllm_dir=args.reuse_vllm_dir,
+        )
 
     if args.out_dir:
         out_dir = Path(args.out_dir)
