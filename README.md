@@ -2,7 +2,7 @@
 
 LoRA fine-tuning tools for [FunAudioLLM/CosyVoice](https://github.com/FunAudioLLM/CosyVoice) v3 (Fun-CosyVoice3-0.5B). Companion repo for single-speaker voice cloning on a 24GB consumer GPU.
 
-> **Status:** LoRA run completed. Best checkpoint at epoch 12 (CV loss 3.044). Quality evaluation pending.
+> **Status:** LoRA run completed. Best checkpoint at epoch 12 (CV loss 3.044). Standard PyTorch and merged-weight vLLM 0.15.1 inference were validated end to end on an RTX 3090 Ti on 2026-07-28. Perceptual quality ranking remains pending.
 
 ## Why this repo exists
 
@@ -230,6 +230,35 @@ Use a vLLM and Transformers combination supported by your checked-out CosyVoice
 revision. Current upstream documentation supports vLLM 0.11.x or newer with the
 V1 engine, or the legacy vLLM 0.9.0 path. Untested intermediate versions may not
 be compatible.
+
+The verified local combination was Python 3.10.19, PyTorch 2.9.1+cu128,
+Transformers 4.57.6, vLLM 0.15.1, PEFT 0.18.1, NumPy 1.26.4, and TorchCodec
+0.9.0. A fresh merged export produced a valid 24 kHz mono WAV with 7.08 seconds
+of audio and an RTF of 0.178 on an RTX 3090 Ti. This verifies execution and
+artifact validity for that version set. It does not establish perceptual quality
+or compatibility with every newer vLLM release.
+
+After verifying that an export belongs to the intended adapter, it can be reused
+without loading and merging the LoRA again:
+
+```bash
+python tools/infer_cosyvoice3_lora.py \
+    --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+    --lora-dir exp/your_run/lora/epoch_12_whole \
+    --vllm-dir exp/your_run/vllm/epoch_12_merged \
+    --reuse-vllm-dir \
+    --prompt-wav /path/to/prompt.wav \
+    --prompt-text "Text matching the prompt audio" \
+    --text "Text to synthesize" \
+    --out-wav output-vllm-reused.wav
+```
+
+Do not use process exit status alone as the success criterion. CosyVoice can
+raise an exception in its background LLM thread while the parent process still
+writes a very short WAV and exits successfully. Check the log for thread
+exceptions, then validate sample rate, duration, frame count, and non-trivial
+audio level. The verified vLLM sample had 169,920 frames, peak amplitude 0.798,
+and RMS 0.124.
 
 ## Diagnosis: why the first run failed
 
