@@ -41,7 +41,14 @@ def read_texts(text: str | None, texts_file: str | None) -> list[str]:
     return lines
 
 
-def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> None:
+def expose_embed_tokens_for_cosyvoice(peft_model: PeftModel) -> None:
+    """Restore the attribute path used by CosyVoice after PEFT wrapping."""
+    qwen2_causal = peft_model.model
+    if not hasattr(qwen2_causal, "embed_tokens") and hasattr(qwen2_causal, "model"):
+        qwen2_causal.embed_tokens = qwen2_causal.model.embed_tokens
+
+
+def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> PeftModel:
     model = cosyvoice.model
     if not hasattr(model, "llm") or not hasattr(model.llm, "llm"):
         raise RuntimeError("Unexpected CosyVoice3 model structure; cannot locate Qwen2 encoder.")
@@ -51,7 +58,43 @@ def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> None:
     base = encoder.model
     peft_model = PeftModel.from_pretrained(base, lora_dir, is_trainable=False)
     peft_model.eval()
+    expose_embed_tokens_for_cosyvoice(peft_model)
     encoder.model = peft_model
+    return peft_model
+
+
+def enable_vllm_with_merged_lora(
+    cosyvoice: CosyVoice3,
+    peft_model: PeftModel,
+    vllm_dir: str,
+) -> None:
+    """Merge the adapter, export the merged LLM, and enable CosyVoice vLLM."""
+    export_dir = Path(vllm_dir)
+    if export_dir.exists():
+        raise FileExistsError(
+            f"vLLM export directory already exists: {export_dir}. "
+            "Use a new directory so a stale export cannot be loaded for this adapter."
+        )
+
+    try:
+        merged_model = peft_model.merge_and_unload(safe_merge=True)
+    except TypeError:
+        merged_model = peft_model.merge_and_unload()
+
+    encoder = cosyvoice.model.llm.llm
+    encoder.model = merged_model
+
+    try:
+        from vllm import ModelRegistry
+        from cosyvoice.vllm.cosyvoice2 import CosyVoice2ForCausalLM
+    except ImportError as exc:
+        raise ImportError(
+            "vLLM inference requires a CosyVoice-supported vLLM installation. "
+            "See the repository README for supported version pairs."
+        ) from exc
+
+    ModelRegistry.register_model("CosyVoice2ForCausalLM", CosyVoice2ForCausalLM)
+    cosyvoice.model.load_vllm(str(export_dir))
 
 
 def main() -> None:
@@ -66,6 +109,11 @@ def main() -> None:
     parser.add_argument("--out-dir", default="", help="Output directory (multiple texts)")
     parser.add_argument("--speed", type=float, default=1.0, help="Speech speed multiplier")
     parser.add_argument("--fp16", action="store_true", help="Enable fp16 inference")
+    parser.add_argument(
+        "--vllm-dir",
+        default="",
+        help="Export the merged base plus LoRA model here and use vLLM for LLM decoding",
+    )
     parser.add_argument("--no-text-frontend", dest="text_frontend", action="store_false", help="Disable text frontend")
     parser.set_defaults(text_frontend=True)
     args = parser.parse_args()
@@ -83,7 +131,9 @@ def main() -> None:
         raise FileNotFoundError(f"Prompt wav not found: {prompt_wav}")
 
     cosyvoice = CosyVoice3(args.pretrained_dir, fp16=args.fp16)
-    apply_lora_to_cosyvoice3(cosyvoice, args.lora_dir)
+    peft_model = apply_lora_to_cosyvoice3(cosyvoice, args.lora_dir)
+    if args.vllm_dir:
+        enable_vllm_with_merged_lora(cosyvoice, peft_model, args.vllm_dir)
 
     if args.out_dir:
         out_dir = Path(args.out_dir)

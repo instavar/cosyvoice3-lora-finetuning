@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Bug fixes
+
+- Restore CosyVoice's expected `embed_tokens` access path after loading a PEFT
+  adapter during inference.
+- Add a `--vllm-dir` inference path that safely merges the LoRA adapter into the
+  base Qwen2 model, exports fresh merged weights, registers the CosyVoice vLLM
+  model, and enables vLLM decoding.
+- Refuse existing vLLM export directories to prevent silently loading weights
+  produced from a different adapter.
+
 ## v0.1.0 — First public CosyVoice3 LoRA fine-tuning pipeline
 
 ### What's included

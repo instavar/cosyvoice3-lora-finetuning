@@ -199,6 +199,38 @@ python tools/generate_cosyvoice3_samples.py \
     --min-seconds 10
 ```
 
+The inference helper restores CosyVoice's expected `embed_tokens` attribute after
+PEFT wraps the Qwen2 model. This prevents the
+`Qwen2ForCausalLM has no attribute embed_tokens` failure.
+
+### vLLM inference with a LoRA checkpoint
+
+CosyVoice's vLLM integration does not currently pass a per-request LoRA adapter
+to vLLM. Use the merged-weight path instead: load the PEFT adapter, merge it into
+the base Qwen2 model, export that merged model for vLLM, and then run the normal
+CosyVoice pipeline.
+
+```bash
+python tools/infer_cosyvoice3_lora.py \
+    --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+    --lora-dir exp/your_run/lora/epoch_12_whole \
+    --vllm-dir exp/your_run/vllm/epoch_12_merged \
+    --prompt-wav /path/to/prompt.wav \
+    --prompt-text "Text matching the prompt audio" \
+    --text "Text to synthesize" \
+    --out-wav output-vllm.wav
+```
+
+The `--vllm-dir` must be a new path. Refusing an existing directory prevents an
+export from a different adapter from being reused silently. The original LoRA
+checkpoint is not modified. This path uses more disk space than runtime adapter
+loading because it exports merged LLM weights.
+
+Use a vLLM and Transformers combination supported by your checked-out CosyVoice
+revision. Current upstream documentation supports vLLM 0.11.x or newer with the
+V1 engine, or the legacy vLLM 0.9.0 path. Untested intermediate versions may not
+be compatible.
+
 ## Diagnosis: why the first run failed
 
 The first CosyVoice3 run on IMDA NSC FEMALE_01 (17K utterances, RTX 3090 Ti) used **full SFT instead of LoRA** and did not reach production quality.
