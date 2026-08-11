@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "cosyvoice3-female01-lora-epoch12",
+  "repository": "instavar/cosyvoice3-lora-finetuning",
+  "model_family": "CosyVoice3",
+  "adaptation_mode": "lora",
+  "evidence_revision": "be453363b49a50d6e156e0f25c09fdb605b1298e",
+  "observed_date": "2026-07-28",
+  "source_refs": [
+    "README.md#lora-run-results",
+    "README.md#vllm-inference-with-a-lora-checkpoint",
+    "reports/runtime-smoke-2026-08-12.md"
+  ],
+  "stage_evidence": {
+    "preflight": {
+      "status": "not_recorded",
+      "evidence_refs": [],
+      "boundary": "The historical run did not preserve a strict grouped corpus audit and production-path preflight artifact."
+    },
+    "training": {
+      "status": "validated",
+      "evidence_refs": ["README.md#lora-run-results"],
+      "boundary": "The real LoRA run completed and selected epoch 12 by cross-validation loss."
+    },
+    "inference": {
+      "status": "validated",
+      "evidence_refs": [
+        "README.md#vllm-inference-with-a-lora-checkpoint",
+        "reports/runtime-smoke-2026-08-12.md"
+      ],
+      "boundary": "PyTorch adapter and merged-weight vLLM paths produced valid WAV files. The selected PyTorch adapter was rerun on the frozen neutral brief with its weights hash recorded."
+    },
+    "evaluation": {
+      "status": "observed",
+      "evidence_refs": [
+        "README.md#lora-run-results",
+        "reports/runtime-smoke-2026-08-12.md"
+      ],
+      "boundary": "Cross-validation loss controlled checkpoint selection and the frozen neutral brief had ASR WER 0.0. Speaker, accent, cadence, and perceptual ranking remain pending."
+    },
+    "packaging": {
+      "status": "observed",
+      "evidence_refs": ["README.md#vllm-inference-with-a-lora-checkpoint"],
+      "boundary": "A merged vLLM export was created, but no promoted immutable package was recorded."
+    }
+  },
+  "contract_migration": {
+    "experiment_manifest": "blocked",
+    "artifact_package": "blocked",
+    "blockers": [
+      "Grouped train, validation, and test hashes are unavailable for the historical run.",
+      "Only the selected PyTorch adapter hash and one short objective prompt are recorded; the merged export, complete frozen suite, and listening report remain incomplete."
+    ]
+  }
+}

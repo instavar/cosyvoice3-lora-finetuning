@@ -43,8 +43,14 @@ pip install peft  # Required for LoRA
 
 # 4. Prepare your data (see Data Preparation below)
 
-# 5. Run LoRA training
-torchrun --nnodes=1 --nproc_per_node=1 \
+# 5. Audit JSONL manifests for the same corpus and split assignment, then train
+export INSTAVAR_VOICE_EVAL_DIR=/path/to/instavar-voice-evaluation
+../cosyvoice3-lora-finetuning/scripts/run_with_corpus_audit.sh \
+  --split train=your_data/audit/train.jsonl \
+  --split validation=your_data/audit/validation.jsonl \
+  --split test=your_data/audit/test.jsonl \
+  --group-field recording_id \
+  -- torchrun --nnodes=1 --nproc_per_node=1 \
     tools/train_cosyvoice3_lora.py \
     --train_engine deepspeed \
     --model llm \
