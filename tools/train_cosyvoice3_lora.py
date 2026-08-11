@@ -68,6 +68,12 @@ def get_args():
     parser.add_argument("--use_amp", action="store_true", default=False, help="Use automatic mixed precision training")
     parser.add_argument("--dpo", action="store_true", default=False, help="Use Direct Preference Optimization")
     parser.add_argument("--timeout", default=60, type=int, help="timeout (in seconds) of cosyvoice_join")
+    parser.add_argument(
+        "--early-stop-on-cv-overfit",
+        action="store_true",
+        default=False,
+        help="Stop after the first epoch where the configured CV patience is exhausted",
+    )
     parser = deepspeed.add_config_arguments(parser)
 
     # LoRA options
@@ -310,6 +316,15 @@ def main():
         group_join = dist.new_group(backend="gloo", timeout=datetime.timedelta(seconds=args.timeout))
         executor.train_one_epoc(model, optimizer, scheduler, train_data_loader, cv_data_loader, writer, info_dict, scaler, group_join)
         dist.destroy_process_group(group_join)
+        if args.early_stop_on_cv_overfit and int(info_dict.get("cv_overfit_flag", 0)) == 1:
+            if dist.get_rank() == 0:
+                logging.warning(
+                    "Early stopping after epoch %s: CV %s did not improve for %s epochs.",
+                    epoch,
+                    info_dict.get("cv_monitor_used", info_dict.get("cv_monitor", "loss")),
+                    info_dict.get("cv_no_improve_epochs", "unknown"),
+                )
+            break
 
 
 if __name__ == "__main__":

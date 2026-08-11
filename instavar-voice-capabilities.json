@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0.0",
+  "repository": {
+    "slug": "instavar/cosyvoice3-lora-finetuning",
+    "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
+    "evidence_revision": "be453363b49a50d6e156e0f25c09fdb605b1298e"
+  },
+  "model": {
+    "family": "CosyVoice3",
+    "upstream_repository": "FunAudioLLM/CosyVoice"
+  },
+  "adaptation": {
+    "lora": {
+      "status": "supported",
+      "evidence": [
+        {
+          "level": "validated",
+          "ref": "README.md#lora-run-results",
+          "claim": "A real LoRA run, checkpoint selection, PyTorch inference, and merged-weight vLLM inference are documented."
+        }
+      ]
+    },
+    "full_sft": {
+      "status": "upstream_only",
+      "evidence": [
+        {
+          "level": "negative_result",
+          "ref": "README.md#diagnosis-why-the-first-run-failed",
+          "claim": "The recorded full-SFT path overfit in the tested single-speaker run and is not promoted by this companion."
+        }
+      ]
+    }
+  },
+  "runtimes": [
+    {
+      "id": "pytorch",
+      "status": "supported",
+      "artifact_mode": "adapter",
+      "streaming": true,
+      "evidence": [
+        {
+          "level": "validated",
+          "ref": "README.md#evaluation",
+          "claim": "The LoRA inference tool generated valid checkpoint samples through the pinned PyTorch path."
+        }
+      ]
+    },
+    {
+      "id": "vllm",
+      "status": "supported",
+      "artifact_mode": "merged",
+      "streaming": true,
+      "evidence": [
+        {
+          "level": "validated",
+          "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
+          "claim": "A merged-weight export and vLLM 0.15.1 inference were validated end to end on the recorded environment."
+        }
+      ]
+    },
+    {
+      "id": "vllm_direct_lora",
+      "status": "unsupported",
+      "artifact_mode": "adapter",
+      "streaming": true,
+      "evidence": [],
+      "notes": "The pinned upstream integration does not pass a per-request LoRA adapter to vLLM."
+    }
+  ],
+  "evaluation": {
+    "prompt_pack": {
+      "id": "instavar-singapore-english",
+      "version": "1.0.0",
+      "sha256": "79491bec271c0aa1ea1b7dd92dd976476959f1607859a67451652f7c12e56a45"
+    },
+    "objective_metrics": [
+      "asr_word_error_rate",
+      "speaker_embedding_similarity",
+      "invalid_output_rate",
+      "duration_seconds",
+      "sample_rate_hz",
+      "silence_fraction",
+      "clipping_fraction",
+      "real_time_factor",
+      "peak_memory_bytes"
+    ],
+    "listening_criteria": [
+      "speaker_identity",
+      "singapore_english_accent_fidelity",
+      "lexical_pronunciation",
+      "cadence_variation",
+      "long_form_monotony",
+      "naturalness",
+      "emotion_and_instruction_obedience",
+      "artifact_severity",
+      "listening_fatigue"
+    ]
+  },
+  "rights": {
+    "code": "The companion tools are Apache-2.0. CosyVoice uses separate upstream community terms.",
+    "weights": "Pin and review the upstream model-weight terms separately from this repository's code license.",
+    "dataset": "Record dataset provenance, permitted use, and speaker consent before training.",
+    "generated_output": "Review the model and dataset terms for the intended generated-output use."
+  },
+  "known_gaps": [
+    "Perceptual ranking of the selected checkpoint remains pending.",
+    "Opt-in CV early stopping is implemented but has not yet been exercised in a recorded multi-rank production run.",
+    "PyTorch and merged-vLLM output equivalence has not been assessed with the frozen listening suite."
+  ]
+}

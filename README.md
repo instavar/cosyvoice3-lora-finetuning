@@ -106,7 +106,7 @@ Best checkpoint: **epoch 12**. Early stopping at epoch 15 would have been ideal.
 | LoRA alpha | 64 | Standard 4x rank scaling |
 | LoRA targets | q_proj,k_proj,v_proj,o_proj | Attention projections only |
 | Learning rate | **5e-5** | LoRA adapts faster than full SFT (which used 1e-5) |
-| Max epochs | **20** | Best region is epoch 10-12; stop early |
+| Max epochs | **20** | Best region was epoch 10-12 in the recorded run; stop early |
 | Grad accumulation | 2 | Effective batch size of 2 |
 | Early stopping patience | 3 | Hard stop when CV loss diverges |
 | DeepSpeed | Stage 2 (no CPU offload) | Fits in 24 GB VRAM with 7 GB peak |
@@ -125,17 +125,17 @@ The pipeline:
 
 ## Known pitfalls
 
-### 1. Do not use full SFT
+### 1. Avoid full SFT by default for the recorded single-speaker setup
 
-The upstream `cosyvoice/bin/train.py` trains all 506M parameters. Our first run used this path and produced 174 GB of checkpoints with severe overfitting after epoch 1. Use `tools/train_cosyvoice3_lora.py` instead.
+The upstream `cosyvoice/bin/train.py` trains all 506M parameters. Our recorded single-speaker run used this path and produced 174 GB of checkpoints with severe overfitting after epoch 1. Use `tools/train_cosyvoice3_lora.py` for the same adaptation regime. This result does not establish that full SFT fails for every dataset, budget, or regularization strategy.
 
 ### 2. Do not trust training loss alone
 
-Training loss will keep dropping even as quality degrades. CV loss is the only reliable signal. Our full SFT run had training loss of 1.2 at epoch 4 while CV loss was already worse than epoch 0.
+Training loss can keep dropping even as held-out behavior degrades. In our recorded full-SFT run, training loss reached 1.2 at epoch 4 while CV loss was already worse than epoch 0. Use CV loss for checkpoint control, then use held-out synthesis and blinded listening for quality selection.
 
-### 3. The upstream has no early stopping
+### 3. Enable the fork's opt-in early stopping
 
-Our `executor.py` patch adds CV monitoring and overfitting warnings, but it only logs — it does not stop training. You must manually stop or implement hard stopping. Our LoRA run trained 200 epochs when 20 would have sufficed.
+Our `executor.py` patch adds CV monitoring and overfitting warnings. Pass `--early-stop-on-cv-overfit` to the LoRA trainer to stop at the epoch boundary after the configured patience is exhausted. The option is off by default for backward compatibility. The recorded LoRA run did not have this control and continued to 200 epochs even though the best observed region was much earlier.
 
 ### 4. Checkpoint size is a smell
 
@@ -304,3 +304,7 @@ At epochs 8-10, generating >10 second audio required 11-18 seed attempts. The mo
 ## License
 
 Tools in this repo are Apache-2.0 licensed. CosyVoice itself is under the [CosyVoice Community License](https://github.com/FunAudioLLM/CosyVoice/blob/main/LICENSE).
+
+## Instavar Voice conformance
+
+[`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation).

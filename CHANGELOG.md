@@ -43,9 +43,9 @@ The corrected LoRA run (2.16M trainable params, LR 5e-5) showed:
 ### Known pitfalls (7 documented)
 
 From production fine-tuning on IMDA NSC FEMALE_01 (17K utterances, RTX 3090 Ti):
-1. Do not use full SFT — use LoRA
-2. Do not trust training loss alone — CV loss is the only reliable signal
-3. Upstream has no early stopping
+1. The recorded single-speaker full-SFT setup overfit; prefer LoRA for the same regime
+2. Training loss alone was misleading; use CV loss for checkpoint control and listening evaluation for quality selection
+3. The recorded run lacked early stopping; the fork now provides opt-in epoch-boundary stopping through `--early-stop-on-cv-overfit`
 4. Checkpoint size is a smell (GB = full SFT, MB = LoRA)
 5. PEFT wrapping breaks `embed_tokens` access path
 6. Parquet data prep can produce `numpy.object_` embeddings
