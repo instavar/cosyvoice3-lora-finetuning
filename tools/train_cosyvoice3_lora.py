@@ -14,6 +14,8 @@ import yaml
 from hyperpyyaml import load_hyperpyyaml
 from torch.distributed.elastic.multiprocessing.errors import record
 
+from distributed_early_stop import synchronize_early_stop
+
 from cosyvoice.utils.executor import Executor
 from cosyvoice.utils.scheduler import WarmupLR, WarmupPolicy, NoamHoldAnnealing, ConstantLR
 from cosyvoice.utils.train_utils import (
@@ -316,7 +318,10 @@ def main():
         group_join = dist.new_group(backend="gloo", timeout=datetime.timedelta(seconds=args.timeout))
         executor.train_one_epoc(model, optimizer, scheduler, train_data_loader, cv_data_loader, writer, info_dict, scaler, group_join)
         dist.destroy_process_group(group_join)
-        if args.early_stop_on_cv_overfit and int(info_dict.get("cv_overfit_flag", 0)) == 1:
+        local_stop = args.early_stop_on_cv_overfit and int(info_dict.get("cv_overfit_flag", 0)) == 1
+        should_stop = synchronize_early_stop(local_stop, device=next(model.parameters()).device)
+        info_dict["cv_overfit_flag"] = int(should_stop)
+        if should_stop:
             if dist.get_rank() == 0:
                 logging.warning(
                     "Early stopping after epoch %s: CV %s did not improve for %s epochs.",
