@@ -19,7 +19,7 @@ except ImportError as exc:  # pragma: no cover
     raise ImportError("peft is required for LoRA inference. Install with: pip install peft") from exc
 
 from cosyvoice.cli.cosyvoice import CosyVoice3
-
+from cosyvoice_generation import invoke_generation, validate_generation_inputs
 
 DEFAULT_PROMPT_WAV = ""
 DEFAULT_PROMPT_TEXT = ""
@@ -105,10 +105,10 @@ def enable_vllm_with_merged_lora(
     builtins.Union = Union
     builtins.Iterable = Iterable
     try:
-        from vllm import EngineArgs, LLMEngine, ModelRegistry
+        from cosyvoice.utils.file_utils import export_cosyvoice2_vllm
         from cosyvoice.vllm import cosyvoice2 as cosyvoice2_module
         from cosyvoice.vllm.cosyvoice2 import CosyVoice2ForCausalLM
-        from cosyvoice.utils.file_utils import export_cosyvoice2_vllm
+        from vllm import EngineArgs, LLMEngine, ModelRegistry
     except ImportError as exc:
         raise ImportError(
             "vLLM inference requires a CosyVoice-supported vLLM installation. "
@@ -182,7 +182,16 @@ def main() -> None:
     parser.add_argument("--pretrained-dir", required=True, help="CosyVoice3 pretrained model directory")
     parser.add_argument("--lora-dir", required=True, help="LoRA adapter directory")
     parser.add_argument("--prompt-wav", required=True, help="Prompt wav path")
-    parser.add_argument("--prompt-text", required=True, help="Prompt text matching the prompt audio")
+    parser.add_argument(
+        "--prompt-text",
+        default="",
+        help="Prompt text matching the prompt audio; required for zero-shot",
+    )
+    parser.add_argument(
+        "--instruction",
+        default=None,
+        help="Optional style instruction routed through CosyVoice inference_instruct2",
+    )
     parser.add_argument("--text", default="", help="Single input text")
     parser.add_argument("--texts-file", default="", help="Text file with one sentence per line")
     parser.add_argument("--out-wav", default="", help="Output wav path (single text only)")
@@ -206,6 +215,15 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     texts = read_texts(args.text or None, args.texts_file or None)
+    for text in texts:
+        validate_generation_inputs(
+            text=text,
+            instruction=args.instruction,
+            prompt_text=args.prompt_text,
+            prompt_wav=args.prompt_wav,
+            speed=args.speed,
+            text_frontend=args.text_frontend,
+        )
     if args.out_wav and len(texts) != 1:
         raise ValueError("--out-wav only supports a single --text")
     if not args.out_wav and not args.out_dir:
@@ -235,14 +253,17 @@ def main() -> None:
 
     for idx, text in enumerate(texts, start=1):
         chunks = []
-        for model_output in cosyvoice.inference_zero_shot(
-            text,
-            args.prompt_text,
-            str(prompt_wav),
-            stream=False,
+        output_stream, route, _ = invoke_generation(
+            cosyvoice,
+            text=text,
+            instruction=args.instruction,
+            prompt_text=args.prompt_text,
+            prompt_wav=str(prompt_wav),
             speed=args.speed,
             text_frontend=args.text_frontend,
-        ):
+        )
+        logging.info("Generation route: %s", route)
+        for model_output in output_stream:
             chunks.append(model_output["tts_speech"].cpu())
         if not chunks:
             raise RuntimeError(f"No audio generated for text: {text}")

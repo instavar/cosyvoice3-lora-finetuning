@@ -37,3 +37,17 @@ Evidence is under
 `/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260812_instavar_voice_suite_v1_1`.
 This deterministic failure establishes a PyTorch negative result for the named
 checkpoint, prompts, and seeds. It does not establish a perceptual ranking.
+
+## 2026-08-13 instruction-routing erratum
+
+The frozen plan attached different instructions to the two emotion rows, but
+the runner used `inference_zero_shot` for every row and recorded
+`instruction_applied: false`. The six short artifacts remain negative evidence
+for those exact runtime attempts. They are not evidence that CosyVoice3 failed
+emotion control because the requested controls never reached the model.
+
+The repository now dispatches instructed rows through upstream
+`inference_instruct2`, rejects malformed or unsupported instruction routes, and
+records the requested and applied control fields. This correction is covered by
+dependency-free contract tests only. No real-model rerun has yet established
+whether the six rows become valid or obey their requested emotions.

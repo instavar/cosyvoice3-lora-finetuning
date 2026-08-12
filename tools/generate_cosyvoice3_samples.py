@@ -9,6 +9,11 @@ from pathlib import Path
 import numpy as np
 import torch
 import torchaudio
+from cosyvoice_generation import (
+    generation_route,
+    invoke_generation,
+    validate_generation_inputs,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 THIRD_PARTY = REPO_ROOT / "third_party" / "Matcha-TTS"
@@ -68,6 +73,7 @@ def generate_sample(
     text: str,
     prompt_text: str,
     prompt_wav: str,
+    instruction: str | None,
     speed: float,
     text_frontend: bool,
     sample_rate: int,
@@ -86,14 +92,16 @@ def generate_sample(
         seed_everything(seed)
         try:
             chunks = []
-            for model_output in cosyvoice.inference_zero_shot(
-                text,
-                prompt_text,
-                prompt_wav,
-                stream=False,
+            output_stream, _, _ = invoke_generation(
+                cosyvoice,
+                text=text,
+                instruction=instruction,
+                prompt_text=prompt_text,
+                prompt_wav=prompt_wav,
                 speed=speed,
                 text_frontend=text_frontend,
-            ):
+            )
+            for model_output in output_stream:
                 chunks.append(model_output["tts_speech"].cpu())
             if not chunks:
                 raise RuntimeError("No audio generated (empty output).")
@@ -133,8 +141,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--prompt-text",
-        required=True,
-        help="Prompt text that matches the prompt wav.",
+        default="",
+        help="Prompt text that matches the prompt wav; required for zero-shot.",
+    )
+    parser.add_argument(
+        "--instruction",
+        default=None,
+        help="Optional style instruction routed through CosyVoice inference_instruct2.",
     )
     parser.add_argument("--texts-file", default="samples/cosyvoice3_long_texts.txt", help="Text file with one target sentence per line.")
     parser.add_argument("--out-dir", default="samples/cosyvoice3_long", help="Output directory for generated wavs.")
@@ -167,6 +180,16 @@ def main() -> None:
     prompt_wav_path = Path(args.prompt_wav)
     if not prompt_wav_path.exists():
         raise FileNotFoundError(f"Prompt wav not found: {prompt_wav_path}")
+    for text in texts:
+        validate_generation_inputs(
+            text=text,
+            instruction=args.instruction,
+            prompt_text=args.prompt_text,
+            prompt_wav=str(prompt_wav_path),
+            speed=args.speed,
+            text_frontend=args.text_frontend,
+        )
+    selected_route = generation_route(args.instruction)
     cosyvoice = CosyVoice3(str(pretrained_dir), fp16=args.fp16)
 
     metadata: dict[str, object] = {
@@ -174,6 +197,8 @@ def main() -> None:
         "exp_root": str(exp_root),
         "prompt_wav": args.prompt_wav,
         "prompt_text": args.prompt_text,
+        "instruction": args.instruction,
+        "instruction_route": selected_route,
         "texts_file": args.texts_file,
         "texts": texts,
         "sample_rate": cosyvoice.sample_rate,
@@ -209,6 +234,7 @@ def main() -> None:
                     text,
                     args.prompt_text,
                     str(prompt_wav_path),
+                    args.instruction,
                     args.speed,
                     args.text_frontend,
                     cosyvoice.sample_rate,

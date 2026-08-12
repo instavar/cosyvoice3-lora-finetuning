@@ -4,7 +4,6 @@ import ast
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[1]
 
 
@@ -34,6 +33,10 @@ class DistributedEarlyStopContractTests(unittest.TestCase):
         self.assertIn('"runtime_id": runtime_id', source)
         self.assertIn('"artifact_set_sha256": args.artifact_set_sha256', source)
         self.assertIn('"observation_schema_version": "1.0.0"', source)
+        self.assertIn("invoke_generation", source)
+        self.assertIn('"instruction_route": instruction_route', source)
+        self.assertIn('"instruction_applied": applied_instruction is not None', source)
+        self.assertNotIn("cosyvoice.inference_zero_shot(", source)
 
 
 if __name__ == "__main__":

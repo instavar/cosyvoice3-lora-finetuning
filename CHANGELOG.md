@@ -4,6 +4,11 @@
 
 ### Bug fixes
 
+- Route frozen-plan style instructions through CosyVoice3
+  `inference_instruct2` instead of silently discarding them on the zero-shot
+  path. Reject malformed control text and runtimes without instruction support
+  before treating the row as an emotion-control observation.
+- Run every dependency-free repository contract test in hosted CI.
 - Restore CosyVoice's expected `embed_tokens` access path after loading a PEFT
   adapter during inference.
 - Add a `--vllm-dir` inference path that safely merges the LoRA adapter into the

@@ -222,6 +222,24 @@ inside its background LLM thread while the parent call still returns a roughly
 0.04-second WAV, so process exit and non-empty audio are not sufficient runtime
 evidence.
 
+The runner dispatches each row according to its frozen control contract. Rows
+without an `instruction` use `inference_zero_shot`. Rows with an instruction
+use `inference_instruct2`, which accepts the target text, instruction, and
+reference WAV but not the reference transcript. The runner rejects empty,
+non-string, or pre-delimited instructions before loading the model and never
+falls back to zero-shot when instruction support is unavailable. Each
+observation records the requested instruction, chosen route, normalized applied
+instruction, and whether the instruction was actually submitted. Valid audio
+still does not prove instruction obedience, so instructed rows require the
+frozen listening review.
+
+The six historical 0.04-second artifacts remain valid negative runtime
+observations, but they were produced by an earlier runner that silently ignored
+the two frozen emotion instructions and used `inference_zero_shot` for every
+row. They therefore do not establish an emotion-control failure. Rerun the six
+rows through the corrected route before making any claim about instruction
+obedience or the adapted checkpoint's emotion support.
+
 ```bash
 python tools/run_evaluation_suite.py \
   --cosyvoice-dir /path/to/CosyVoice \
@@ -272,6 +290,12 @@ python tools/generate_cosyvoice3_samples.py \
     --out-dir samples/eval \
     --min-seconds 10
 ```
+
+Add `--instruction "Read with calm confidence."` to either helper to use the
+upstream `inference_instruct2` route. Do not add `<|endofprompt|>` yourself
+because the upstream instruction frontend adds that delimiter internally. The
+prompt WAV still provides the speaker reference; `--prompt-text` is used only
+by the zero-shot route.
 
 The inference helper restores CosyVoice's expected `embed_tokens` attribute after
 PEFT wraps the Qwen2 model. This prevents the

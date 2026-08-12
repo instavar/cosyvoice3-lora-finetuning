@@ -14,7 +14,6 @@ from pathlib import Path
 import torch
 import torchaudio
 
-
 IDENTIFIER_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
 
@@ -91,8 +90,16 @@ def main() -> int:
     sys.path.insert(0, str(cosyvoice_dir))
 
     from cosyvoice.cli.cosyvoice import CosyVoice3
+    from cosyvoice_generation import (
+        generation_route,
+        invoke_generation,
+        validate_generation_inputs,
+    )
     from generate_cosyvoice3_samples import seed_everything
-    from infer_cosyvoice3_lora import apply_lora_to_cosyvoice3, enable_vllm_with_merged_lora
+    from infer_cosyvoice3_lora import (
+        apply_lora_to_cosyvoice3,
+        enable_vllm_with_merged_lora,
+    )
 
     plan = json.loads(args.generation_plan.read_text(encoding="utf-8"))
     if plan.get("schema_version") not in {"1.0.0", "1.1.0"}:
@@ -100,6 +107,20 @@ def main() -> int:
     rows = [row for row in plan.get("samples", []) if row.get("candidate_id") == args.candidate_id]
     if not rows:
         raise ValueError(f"generation plan has no rows for candidate {args.candidate_id!r}")
+    for index, row in enumerate(rows):
+        try:
+            validate_generation_inputs(
+                text=row.get("text"),
+                instruction=row.get("instruction"),
+                prompt_text=args.prompt_text,
+                prompt_wav=args.prompt_wav,
+                speed=args.speed,
+                text_frontend=args.text_frontend,
+            )
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"generation plan sample {index} has invalid generation input: {error}"
+            ) from error
 
     cosyvoice = CosyVoice3(args.pretrained_dir, fp16=args.fp16)
     peft_model = None
@@ -122,6 +143,7 @@ def main() -> int:
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.synchronize()
         started = time.perf_counter()
+        planned_instruction_route = generation_route(row.get("instruction"))
         observation = {
             "observation_schema_version": "1.0.0",
             "sample_id": row["sample_id"],
@@ -133,19 +155,31 @@ def main() -> int:
             "valid": False,
             "runtime": "cosyvoice3_vllm_merged" if args.vllm_dir else "cosyvoice3_pytorch_adapter",
             **artifact_fields,
+            "requested_instruction": row.get("instruction"),
+            "instruction_requested": bool(row.get("instruction")),
+            "instruction_route": planned_instruction_route,
             "instruction_applied": False,
         }
         try:
+            output_stream, instruction_route, applied_instruction = invoke_generation(
+                cosyvoice,
+                text=row["text"],
+                instruction=row.get("instruction"),
+                prompt_text=args.prompt_text,
+                prompt_wav=args.prompt_wav,
+                speed=args.speed,
+                text_frontend=args.text_frontend,
+            )
+            observation.update(
+                {
+                    "instruction_route": instruction_route,
+                    "applied_instruction": applied_instruction,
+                    "instruction_applied": applied_instruction is not None,
+                }
+            )
             chunks = [
                 value["tts_speech"].cpu()
-                for value in cosyvoice.inference_zero_shot(
-                    row["text"],
-                    args.prompt_text,
-                    args.prompt_wav,
-                    stream=False,
-                    speed=args.speed,
-                    text_frontend=args.text_frontend,
-                )
+                for value in output_stream
             ]
             if not chunks:
                 raise RuntimeError("No audio generated")
@@ -173,9 +207,9 @@ def main() -> int:
                         else {}
                     ),
                     "instruction_note": (
-                        "The zero-shot path has no separate style-instruction input."
-                        if row.get("instruction")
-                        else None
+                        "Submitted through inference_instruct2. Valid audio does not by itself prove instruction obedience."
+                        if applied_instruction
+                        else "No instruction was requested; inference_zero_shot was used."
                     ),
                 }
             )

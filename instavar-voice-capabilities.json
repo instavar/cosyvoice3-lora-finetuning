@@ -64,10 +64,15 @@
             {
               "level": "negative_result",
               "ref": "reports/runtime-smoke-2026-08-12.md",
-              "claim": "Fifteen rows were valid while six emotion-control rows returned implausible 0.04-second audio."
+              "claim": "Fifteen rows were valid while six rows assigned to emotion-control categories returned implausible 0.04-second audio; the historical runner did not submit their instructions."
+            },
+            {
+              "level": "repository_declared",
+              "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
+              "claim": "The corrected runner routes instructed rows through inference_instruct2 and records the control route."
             }
           ],
-          "boundary": "The failure is bounded to the selected checkpoint, prompts, seeds, and PyTorch path."
+          "boundary": "The failure is bounded to the selected checkpoint, prompts, seeds, PyTorch path, and an earlier runner that ignored instructions; the corrected route has not been rerun on the real model."
         },
         "evaluation": {
           "status": "negative_result",
@@ -75,10 +80,10 @@
             {
               "level": "negative_result",
               "ref": "reports/runtime-smoke-2026-08-12.md",
-              "claim": "The frozen suite exposed six masked background-thread failures."
+              "claim": "The frozen suite exposed six masked background-thread failures and later audit showed that the requested instructions had been ignored."
             }
           ],
-          "boundary": "The suite detects runtime failure but does not rank perceptual quality."
+          "boundary": "The suite detects runtime failure but the historical rows cannot support emotion-obedience claims; the corrected dispatch remains repository-declared until a real rerun."
         },
         "packaging": {
           "status": "repository_declared",
@@ -212,7 +217,7 @@
       "adapted_candidate": "cosyvoice3-epoch-12",
       "blockers": [
         "No frozen base-model observation matrix exists for the same prompts and seeds.",
-        "Six adapted emotion-control observations are invalid.",
+        "Six adapted rows assigned to emotion-control categories are invalid and need a corrected instruction-route rerun.",
         "Blind listening ratings are incomplete."
       ]
     }
@@ -225,7 +230,8 @@
   },
   "known_gaps": [
     "Perceptual ranking of the selected checkpoint remains pending.",
-    "The PyTorch path returned invalid 0.04-second audio for both emotion prompts at all three frozen seeds.",
+    "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
+    "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
     "PyTorch and merged-vLLM output equivalence has not been assessed with the frozen listening suite."
   ]

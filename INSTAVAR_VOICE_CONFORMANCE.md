@@ -4,7 +4,13 @@ This repository declares its model-specific adaptation and runtime surface in `i
 
 The executable recipe proves that the external CosyVoice checkout equals its recorded upstream revision plus exactly the companion patch set. It applies explicit `MAX_EPOCH` and `LEARNING_RATE` values after loading the full model graph, audits grouped splits, selects one safe adapter, reloads it in a fresh process, evaluates the frozen plan, and packages evidence. A DeepSpeed run must use the same learning rate in its JSON optimizer configuration. The merged vLLM path remains outside this PyTorch lifecycle and needs a separate matched equivalence run.
 
-Capability schema 1.2 records each LoRA lifecycle stage separately and preserves the six invalid emotion-control rows as a negative lifecycle result. It also names the exact blockers for a matched base-model comparison.
+Capability schema 1.2 records each LoRA lifecycle stage separately and preserves
+the six invalid rows assigned to emotion-control categories as a negative
+lifecycle result. A later audit established that the historical runner silently
+ignored their instructions, so those rows do not support an emotion-control
+claim. The corrected route uses `inference_instruct2` and remains
+repository-declared until a real-model rerun. The manifest also names the exact
+blockers for a matched base-model comparison.
 
 A capability marked `supported` means the referenced repository evidence reaches the stated engineering boundary. It does not prove perceptual quality, accent fidelity, commercial suitability, or equivalence across untested runtimes. `unverified_for_adapter` keeps an upstream or community runtime visible without implying that this repository's adapted artifact works there.
 
