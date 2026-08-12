@@ -19,3 +19,21 @@ The test used prompt `neutral-brief` from `instavar-singapore-english` version 1
 The ASR word error rate was 0.0 and the output was a valid mono PCM WAV with no clipped samples. This is one short prompt and one seed. It establishes bounded execution and intelligibility under the named extractor. It does not establish speaker identity, Singapore English accent fidelity, cadence, naturalness, listening fatigue, warm throughput, or long-session stability. Cold-start real-time factor includes model loading.
 
 The first two attempts failed before model loading because the helper required the upstream source root on `PYTHONPATH`. The successful command made both the CosyVoice source root and Matcha-TTS dependency explicit. This is a runtime-layout requirement worth preserving in operational commands.
+
+## Frozen multi-prompt follow-up
+
+The PyTorch suite observed all 21 planned rows from prompt pack 1.1.0 across
+seeds 42, 314159, and 20260812. Fifteen outputs were valid. Both emotion-control
+prompts failed at all three seeds: the background LLM thread raised after
+repeated EOS sampling, while the parent call returned a 0.04-second WAV.
+
+The runner now requires plausible duration and non-trivial peak and RMS levels,
+so those files remain observations but cannot be counted as successful audio.
+The 21 attempts contain 418.240 seconds of audio, including the six invalid
+artifacts, and required 147.294 seconds of warm generation time after model
+loading. Peak allocated CUDA memory during a sample was 4,180.1 MiB.
+
+Evidence is under
+`/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260812_instavar_voice_suite_v1_1`.
+This deterministic failure establishes a PyTorch negative result for the named
+checkpoint, prompts, and seeds. It does not establish a perceptual ranking.
