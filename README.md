@@ -203,7 +203,7 @@ The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
 evaluation plan, and packages provenance. Validate it with evaluator merge
-`d63ab559a8e0592bd373f9b51421040b540fb2b7`. Use the companion tools directly;
+`e689ee121ee4a6ae07793ef1c49d70c48b0ad271`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
