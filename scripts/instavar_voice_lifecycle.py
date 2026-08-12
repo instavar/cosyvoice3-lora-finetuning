@@ -245,6 +245,35 @@ def _audit_data_list(path: Path) -> tuple[dict[str, Any], set[Path]]:
     }, artifacts
 
 
+def _verify_dataset_lineage() -> dict[str, Any]:
+    from instavar_voice_lab.lineage import verify_dataset_lineage
+
+    train_root = _path("PREPARED_TRAIN_ROOT", directory=True)
+    validation_root = _path("PREPARED_VALIDATION_ROOT", directory=True)
+    for name, root in (("TRAIN_DATA_LIST", train_root), ("CV_DATA_LIST", validation_root)):
+        data_list = _path(name)
+        if not data_list.is_relative_to(root):
+            raise ValueError(f"{name} must be inside its declared prepared-data root")
+        _, artifacts = _audit_data_list(data_list)
+        escaped = sorted(str(artifact) for artifact in artifacts if not artifact.is_relative_to(root))
+        if escaped:
+            raise ValueError(f"{name} references artifacts outside its declared prepared-data root: {escaped[0]}")
+    document = json.loads(_path("DATASET_LINEAGE").read_text(encoding="utf-8"))
+    return verify_dataset_lineage(
+        document,
+        producer_revision=_run(["git", "rev-parse", "HEAD"], capture=True),
+        inputs={
+            "raw_train": (_path("RAW_TRAIN_JSONL"), "file"),
+            "raw_validation": (_path("RAW_VALIDATION_JSONL"), "file"),
+            "raw_test": (_path("RAW_TEST_JSONL"), "file"),
+        },
+        outputs={
+            "prepared_train": (train_root, "tree"),
+            "prepared_validation": (validation_root, "tree"),
+        },
+    )
+
+
 def _configured_max_epoch(config: Path) -> int:
     matches: list[str] = []
     in_train_conf = False
@@ -379,6 +408,7 @@ def _training_settings() -> dict[str, str]:
 def _preflight() -> None:
     from instavar_voice_lab.corpus import audit_corpus
 
+    lineage = _verify_dataset_lineage()
     experiment = json.loads(
         _path("INSTAVAR_VOICE_EXPERIMENT_MANIFEST").read_text(encoding="utf-8")
     )
@@ -475,11 +505,13 @@ def _preflight() -> None:
             "prepared_data": {"train": train_data, "cv": cv_data},
             "corpus_audit": audit,
             "generation_rows": len(rows),
+            "dataset_lineage": lineage,
         },
     )
 
 
 def _train() -> None:
+    _verify_dataset_lineage()
     work = _work()
     cosyvoice = _path("COSYVOICE_DIR", directory=True)
     output = work / "train" / "output"
@@ -610,6 +642,7 @@ def _package() -> None:
         "smoke-candidate.wav": work / "infer" / "candidate.wav",
         "experiment-manifest.json": _path("INSTAVAR_VOICE_EXPERIMENT_MANIFEST"),
         "generation-plan.json": _path("GENERATION_PLAN"),
+        "dataset-lineage.json": _path("DATASET_LINEAGE"),
         "training-config.yaml": _path("TRAIN_CONFIG"),
     }
     for name, source in sources.items():
@@ -649,6 +682,8 @@ def run(stage: str) -> None:
     if stage not in actions:
         raise ValueError(f"unknown lifecycle stage: {stage}")
     actions[stage]()
+    if stage in {"preflight", "train"}:
+        _verify_dataset_lineage()
     _write_json(
         Path(os.environ["INSTAVAR_VOICE_STAGE_RESULT"]),
         {"schema_version": "1.0.0", "stage": stage, "status": "passed"},

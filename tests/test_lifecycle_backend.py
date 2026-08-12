@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from instavar_voice_lab.lineage import build_dataset_lineage
+
 ROOT = Path(__file__).parents[1]
 SPEC = importlib.util.spec_from_file_location(
     "cosyvoice_lifecycle", ROOT / "scripts" / "instavar_voice_lifecycle.py"
@@ -66,6 +68,69 @@ class LifecycleBackendTests(unittest.TestCase):
             data_list.write_text("data.parquet\ndata.parquet\n")
             with self.assertRaises(ValueError):
                 LIFECYCLE._audit_data_list(data_list)
+
+    def test_dataset_lineage_binds_raw_splits_to_both_prepared_roots(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            raw: dict[str, Path] = {}
+            for split in ("train", "validation", "test"):
+                audio = root / f"{split}.wav"
+                audio.write_bytes(b"audio")
+                manifest = root / f"{split}.jsonl"
+                manifest.write_text(json.dumps({"audio": str(audio), "text": split}) + "\n")
+                raw[split] = manifest
+            prepared_roots: dict[str, Path] = {}
+            data_lists: dict[str, Path] = {}
+            for split in ("train", "validation"):
+                prepared = root / f"prepared-{split}"
+                prepared.mkdir()
+                artifact = prepared / "data.parquet"
+                artifact.write_bytes(split.encode())
+                data_list = prepared / "data.list"
+                data_list.write_text("data.parquet\n")
+                prepared_roots[split] = prepared
+                data_lists[split] = data_list
+            revision = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
+            ).stdout.strip()
+            receipt = root / "dataset-lineage.json"
+            receipt.write_text(
+                json.dumps(
+                    build_dataset_lineage(
+                        lineage_id="cosy-fixture-v1",
+                        producer_repository="instavar/cosyvoice3-lora-finetuning",
+                        producer_revision=revision,
+                        inputs={
+                            "raw_train": (raw["train"], "file"),
+                            "raw_validation": (raw["validation"], "file"),
+                            "raw_test": (raw["test"], "file"),
+                        },
+                        outputs={
+                            "prepared_train": (prepared_roots["train"], "tree"),
+                            "prepared_validation": (prepared_roots["validation"], "tree"),
+                        },
+                    )
+                )
+            )
+            environment = {
+                "RAW_TRAIN_JSONL": str(raw["train"]),
+                "RAW_VALIDATION_JSONL": str(raw["validation"]),
+                "RAW_TEST_JSONL": str(raw["test"]),
+                "TRAIN_DATA_LIST": str(data_lists["train"]),
+                "CV_DATA_LIST": str(data_lists["validation"]),
+                "PREPARED_TRAIN_ROOT": str(prepared_roots["train"]),
+                "PREPARED_VALIDATION_ROOT": str(prepared_roots["validation"]),
+                "DATASET_LINEAGE": str(receipt),
+            }
+            with patch.dict(os.environ, environment, clear=False):
+                report = LIFECYCLE._verify_dataset_lineage()
+            self.assertEqual(report["lineage_id"], "cosy-fixture-v1")
+            (prepared_roots["validation"] / "data.parquet").write_bytes(b"changed")
+            with (
+                patch.dict(os.environ, environment, clear=False),
+                self.assertRaisesRegex(ValueError, "prepared_validation"),
+            ):
+                LIFECYCLE._verify_dataset_lineage()
 
     def test_training_settings_reject_invalid_processes_and_flags(self) -> None:
         with (
