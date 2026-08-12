@@ -4,3 +4,5 @@ data_prep.log
 parse_female01_asr.py
 prepare_female01_data.sh
 run_lora_training.sh
+__pycache__/
+*.py[cod]
