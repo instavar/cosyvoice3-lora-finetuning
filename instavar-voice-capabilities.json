@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
@@ -18,7 +18,80 @@
           "ref": "README.md#lora-run-results",
           "claim": "A real LoRA run, checkpoint selection, PyTorch inference, and merged-weight vLLM inference are documented."
         }
-      ]
+      ],
+      "lifecycle": {
+        "corpus_audit": {
+          "status": "not_recorded",
+          "evidence": [],
+          "boundary": "The historical run did not preserve a strict grouped corpus-audit artifact."
+        },
+        "training": {
+          "status": "validated",
+          "evidence": [
+            {
+              "level": "validated",
+              "ref": "README.md#lora-run-results",
+              "claim": "A real LoRA run completed and selected epoch 12 by cross-validation loss."
+            }
+          ],
+          "boundary": "Real multi-rank early-stop behavior remains unverified."
+        },
+        "checkpoint_save": {
+          "status": "validated",
+          "evidence": [
+            {
+              "level": "validated",
+              "ref": "README.md#lora-run-results",
+              "claim": "The selected LoRA checkpoint was preserved."
+            }
+          ],
+          "boundary": "Checkpoint preservation does not establish merged-runtime equivalence."
+        },
+        "fresh_process_reload": {
+          "status": "validated",
+          "evidence": [
+            {
+              "level": "validated",
+              "ref": "reports/runtime-smoke-2026-08-12.md",
+              "claim": "The selected adapter loaded in the recorded PyTorch runtime."
+            }
+          ],
+          "boundary": "The merged vLLM export has not passed a matched equivalence suite."
+        },
+        "held_out_inference": {
+          "status": "negative_result",
+          "evidence": [
+            {
+              "level": "negative_result",
+              "ref": "reports/runtime-smoke-2026-08-12.md",
+              "claim": "Fifteen rows were valid while six emotion-control rows returned implausible 0.04-second audio."
+            }
+          ],
+          "boundary": "The failure is bounded to the selected checkpoint, prompts, seeds, and PyTorch path."
+        },
+        "evaluation": {
+          "status": "negative_result",
+          "evidence": [
+            {
+              "level": "negative_result",
+              "ref": "reports/runtime-smoke-2026-08-12.md",
+              "claim": "The frozen suite exposed six masked background-thread failures."
+            }
+          ],
+          "boundary": "The suite detects runtime failure but does not rank perceptual quality."
+        },
+        "packaging": {
+          "status": "repository_declared",
+          "evidence": [
+            {
+              "level": "repository_declared",
+              "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
+              "claim": "The repository documents a merged vLLM export path."
+            }
+          ],
+          "boundary": "No immutable promoted package or PyTorch-versus-vLLM equivalence report is recorded."
+        }
+      }
     },
     "full_sft": {
       "status": "upstream_only",
@@ -132,7 +205,17 @@
       "emotion_and_instruction_obedience",
       "artifact_severity",
       "listening_fatigue"
-    ]
+    ],
+    "matched_comparison": {
+      "status": "blocked",
+      "baseline_candidate": "cosyvoice3-base",
+      "adapted_candidate": "cosyvoice3-epoch-12",
+      "blockers": [
+        "No frozen base-model observation matrix exists for the same prompts and seeds.",
+        "Six adapted emotion-control observations are invalid.",
+        "Blind listening ratings are incomplete."
+      ]
+    }
   },
   "rights": {
     "code": "The companion tools are Apache-2.0. CosyVoice uses separate upstream community terms.",
