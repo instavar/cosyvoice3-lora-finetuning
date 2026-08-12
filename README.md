@@ -203,7 +203,7 @@ The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
 evaluation plan, and packages provenance. Validate it with evaluator revision
-`6fa431f6ab6bb9867a5fc210a187523012323ecb`. Use the companion tools directly;
+`022c16a822ee4393dae9ce295199de59fecd4d43`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
@@ -384,14 +384,15 @@ Tools in this repo are Apache-2.0 licensed. CosyVoice itself is under the [CosyV
 [`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation).
 
 The lifecycle preserves invalid generations as explicit rows, then uses
-evaluator revision `6fa431f6ab6bb9867a5fc210a187523012323ecb` to bind timing,
+evaluator revision `022c16a822ee4393dae9ce295199de59fecd4d43` to bind timing,
 duration, and peak-memory fields to the frozen plan and live output audio. Use
 the packaged `objective-observations.json`, not the raw generation file, for a
 version 1.1 runtime comparison.
 
-The pinned evaluator also provides schema 1.3 frozen speaker-reference
-assignments, fixed per-reference aggregation, and embedding-value binding. A
-producer must commit or otherwise timestamp the assignment plan before
-generation for stronger chronology evidence. This companion does not bundle a
-speaker encoder or execute that external stage. Runtime-bound observations alone
-are not speaker-quality evidence.
+The pinned evaluator provides schema 1.3 frozen speaker-reference assignments
+and the optional schema 1.4 SpeechBrain ECAPA execution path. This companion
+does not bundle ECAPA weights or dependencies and does not invoke the learned
+metric automatically. Run it explicitly after generation with trusted,
+content-addressed checkpoints and a preregistered reference plan. Runtime-bound
+observations or same-recording smoke scores alone are not speaker-quality
+evidence.
