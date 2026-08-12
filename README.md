@@ -186,6 +186,28 @@ The upstream `cosyvoice3.yaml` sets `max_epoch: 200`. If you pass a custom confi
 
 ## Evaluation
 
+### Executable Instavar Voice lifecycle
+
+[`instavar-voice-backend.json`](instavar-voice-backend.json) binds the PyTorch
+LoRA path to a five-stage executable recipe. Preflight verifies that the
+external CosyVoice checkout equals its recorded upstream commit plus exactly
+the four companion patches. The trainer now accepts explicit `--max_epoch` and
+`--learning_rate` overrides after loading the full HyperPyYAML model graph. The
+lifecycle requires both values, preventing the earlier 20-versus-200 epoch
+mismatch and an implicit optimizer-rate mismatch from recurring silently. For
+DeepSpeed, the JSON optimizer rate must equal `LEARNING_RATE`.
+Set `DEEPSPEED_CONFIG` only when `TRAIN_ENGINE=deepspeed`; the PyTorch DDP path
+does not require it.
+
+The lifecycle audits grouped raw splits, writes model output under its unique
+work directory, promotes only one exact adapter directory, strips optimizer
+state from the inference package, reloads in a fresh process, runs the frozen
+evaluation plan, and packages provenance. Validate it with evaluator merge
+`d63ab559a8e0592bd373f9b51421040b540fb2b7`. Use the companion tools directly;
+do not copy them into the external checkout, because unexpected checkout files
+fail provenance verification. A pass covers the PyTorch adapter path only. The
+merged vLLM path still requires a separate matched equivalence lifecycle.
+
 ### Frozen multi-prompt runtime evaluation
 
 Use `tools/run_evaluation_suite.py` to execute a complete Instavar Voice plan
