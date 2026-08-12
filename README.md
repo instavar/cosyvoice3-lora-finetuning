@@ -202,8 +202,8 @@ does not require it.
 The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
-evaluation plan, and packages provenance. Validate it with evaluator merge
-`e689ee121ee4a6ae07793ef1c49d70c48b0ad271`. Use the companion tools directly;
+evaluation plan, and packages provenance. Validate it with evaluator revision
+`a85677df59c416675048967f64f4f97dd6b530cd`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
@@ -231,8 +231,15 @@ python tools/run_evaluation_suite.py \
   --prompt-text "The exact reference transcript." \
   --generation-plan evaluation/generation-plan.json \
   --candidate-id cosyvoice3-epoch12-pytorch \
+  --runtime-id pytorch \
   --output-dir evaluation/cosyvoice3-epoch12-pytorch
 ```
+
+For a cross-runtime experiment, also pass `--artifact-set-id` and
+`--artifact-set-sha256` together. The runner rejects partial or malformed
+bindings. A PyTorch adapter and a merged vLLM export must be recorded as
+`exact` and `derived` respectively, so the shared evaluator will not treat
+conversion provenance as exact artifact identity.
 
 The early-stop option now synchronizes its decision across all initialized
 training ranks with an all-reduce before any rank leaves the epoch loop. Run

@@ -1,6 +1,6 @@
 # Instavar Voice conformance
 
-This repository declares its model-specific adaptation and runtime surface in `instavar-voice-capabilities.json`. The manifest and executable [`instavar-voice-backend.json`](instavar-voice-backend.json) PyTorch LoRA recipe use the public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation) pinned by CI to commit `31bc7b7b97bb7a291a44fc1591620960c2cc2d2d`.
+This repository declares its model-specific adaptation and runtime surface in `instavar-voice-capabilities.json`. The manifest and executable [`instavar-voice-backend.json`](instavar-voice-backend.json) PyTorch LoRA recipe use the public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation) pinned by CI to commit `a85677df59c416675048967f64f4f97dd6b530cd`.
 
 The executable recipe proves that the external CosyVoice checkout equals its recorded upstream revision plus exactly the companion patch set. It applies explicit `MAX_EPOCH` and `LEARNING_RATE` values after loading the full model graph, audits grouped splits, selects one safe adapter, reloads it in a fresh process, evaluates the frozen plan, and packages evidence. A DeepSpeed run must use the same learning rate in its JSON optimizer configuration. The merged vLLM path remains outside this PyTorch lifecycle and needs a separate matched equivalence run.
 
