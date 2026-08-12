@@ -31,6 +31,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--artifact-set-id")
     parser.add_argument("--artifact-set-sha256")
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--allow-invalid-output",
+        action="store_true",
+        help="return success after recording every planned attempt even when an output is invalid",
+    )
     parser.add_argument("--speed", type=float, default=1.0)
     parser.add_argument("--min-audio-seconds", type=float, default=0.5)
     parser.add_argument("--fp16", action="store_true")
@@ -90,6 +95,8 @@ def main() -> int:
     from infer_cosyvoice3_lora import apply_lora_to_cosyvoice3, enable_vllm_with_merged_lora
 
     plan = json.loads(args.generation_plan.read_text(encoding="utf-8"))
+    if plan.get("schema_version") not in {"1.0.0", "1.1.0"}:
+        raise ValueError("generation plan schema_version must equal 1.0.0 or 1.1.0")
     rows = [row for row in plan.get("samples", []) if row.get("candidate_id") == args.candidate_id]
     if not rows:
         raise ValueError(f"generation plan has no rows for candidate {args.candidate_id!r}")
@@ -160,7 +167,11 @@ def main() -> int:
                     "audio_peak": peak,
                     "audio_rms": rms,
                     "generation_seconds": elapsed,
-                    "peak_memory_bytes": int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else 0,
+                    **(
+                        {"peak_memory_bytes": int(torch.cuda.max_memory_allocated())}
+                        if torch.cuda.is_available()
+                        else {}
+                    ),
                     "instruction_note": (
                         "The zero-shot path has no separate style-instruction input."
                         if row.get("instruction")
@@ -179,16 +190,23 @@ def main() -> int:
                     }
                 )
         except Exception as error:
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             observation.update(
                 {
                     "generation_seconds": time.perf_counter() - started,
+                    **(
+                        {"peak_memory_bytes": int(torch.cuda.max_memory_allocated())}
+                        if torch.cuda.is_available()
+                        else {}
+                    ),
                     "error_type": type(error).__name__,
                     "error": str(error),
                 }
             )
         observations.append(observation)
         write_observations(args.output_dir / "generation-observations.json", observations)
-    return 0 if all(row["valid"] for row in observations) else 1
+    return 0 if args.allow_invalid_output or all(row["valid"] for row in observations) else 1
 
 
 if __name__ == "__main__":
