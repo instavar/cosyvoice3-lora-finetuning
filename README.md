@@ -203,7 +203,7 @@ The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
 evaluation plan, and packages provenance. Validate it with evaluator revision
-`2088146501081138b87e8e398eda610a392c0d4d`. Use the companion tools directly;
+`8feadf7bbda75abe1c305c63e362c41b86451cda`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
@@ -384,7 +384,7 @@ Tools in this repo are Apache-2.0 licensed. CosyVoice itself is under the [CosyV
 [`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation).
 
 The lifecycle preserves invalid generations as explicit rows, then uses
-evaluator revision `2088146501081138b87e8e398eda610a392c0d4d` to bind timing,
+evaluator revision `8feadf7bbda75abe1c305c63e362c41b86451cda` to bind timing,
 duration, and peak-memory fields to the frozen plan and live output audio. Use
 the packaged `objective-observations.json`, not the raw generation file, for a
 version 1.1 runtime comparison.
@@ -413,6 +413,11 @@ Version 0.26 adds deterministic per-rater presentation schedules that
 counterbalance candidate precedence within each prompt and seed. Aggregation
 recomputes the private audit, requires the scheduled pseudonymous rater set,
 and keeps order, fatigue, carryover, and reviewer-compliance limits explicit.
+Version 0.27 exports one privacy-preserving packet per pseudonymous rater and
+binds criterion-major presentation logs plus ratings into canonical submission
+receipts. Aggregation reconstructs each packet, rejects forged metadata, and
+records missing reviewers or cells as attrition. Receipt hashes establish
+content integrity, not reviewer identity, delivery, attention, or independence.
 This companion bundles neither model
 weights nor optional extractor dependencies and runs neither learned metric
 automatically. Run them explicitly after generation with trusted, content-addressed
