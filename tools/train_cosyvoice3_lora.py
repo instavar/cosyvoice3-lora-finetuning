@@ -59,6 +59,18 @@ def get_args():
     parser.add_argument("--checkpoint", help="checkpoint model (full model weights)")
     parser.add_argument("--model_dir", required=True, help="save LoRA checkpoints to this dir")
     parser.add_argument("--tensorboard_dir", default="tensorboard", help="tensorboard log dir")
+    parser.add_argument(
+        "--max_epoch",
+        type=int,
+        default=None,
+        help="Explicitly override train_conf.max_epoch after loading the full model config",
+    )
+    parser.add_argument(
+        "--learning_rate",
+        type=float,
+        default=None,
+        help="Explicitly override train_conf.optim_conf.lr after loading the full model config",
+    )
     parser.add_argument("--ddp.dist_backend",
                         dest="dist_backend",
                         default="nccl",
@@ -247,7 +259,20 @@ def main():
     override_dict = {k: None for k in ["llm", "flow", "hift", "hifigan"] if k != args.model}
     with open(args.config, "r", encoding="utf-8") as f:
         configs = load_hyperpyyaml(f, overrides={**override_dict, "qwen_pretrain_path": args.qwen_pretrain_path})
-    configs["train_conf"].update(vars(args))
+    runtime_args = {
+        key: value
+        for key, value in vars(args).items()
+        if key not in {"max_epoch", "learning_rate"}
+    }
+    configs["train_conf"].update(runtime_args)
+    if args.max_epoch is not None:
+        if args.max_epoch < 1:
+            raise ValueError("--max_epoch must be positive")
+        configs["train_conf"]["max_epoch"] = args.max_epoch
+    if args.learning_rate is not None:
+        if args.learning_rate <= 0:
+            raise ValueError("--learning_rate must be positive")
+        configs["train_conf"]["optim_conf"]["lr"] = args.learning_rate
 
     init_distributed(args)
     train_dataset, cv_dataset, train_data_loader, cv_data_loader = init_dataset_and_dataloader(args, configs, gan, args.dpo)

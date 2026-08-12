@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.2.0",
+  "backend_id": "cosyvoice3-lora-pytorch",
+  "capability_binding": {
+    "manifest": "instavar-voice-capabilities.json",
+    "adaptation": "lora",
+    "runtime_ids": ["pytorch"]
+  },
+  "required_environment": [
+    { "name": "COSYVOICE_DIR", "purpose": "Pinned CosyVoice checkout with the exact companion patch set applied." },
+    { "name": "PRETRAINED_DIR", "purpose": "Pinned local Fun-CosyVoice3-0.5B runtime model directory." },
+    { "name": "BASE_LLM_CHECKPOINT", "purpose": "Pinned base llm.pt used to initialize LoRA training." },
+    { "name": "QWEN_PRETRAIN_DIR", "purpose": "Pinned CosyVoice-BlankEN tokenizer and configuration directory." },
+    { "name": "TRAIN_CONFIG", "purpose": "CosyVoice3 HyperPyYAML training configuration." },
+    { "name": "MAX_EPOCH", "purpose": "Explicit positive train_conf.max_epoch override applied after loading the full model config." },
+    { "name": "LEARNING_RATE", "purpose": "Explicit positive LoRA optimizer learning rate." },
+    { "name": "TRAIN_DATA_LIST", "purpose": "Prepared CosyVoice parquet training data list." },
+    { "name": "CV_DATA_LIST", "purpose": "Prepared CosyVoice parquet cross-validation data list." },
+    { "name": "RAW_TRAIN_JSONL", "purpose": "Raw training split used for grouped corpus audit." },
+    { "name": "RAW_VALIDATION_JSONL", "purpose": "Raw validation split used for grouped corpus audit." },
+    { "name": "RAW_TEST_JSONL", "purpose": "Raw test split used for grouped corpus audit." },
+    { "name": "REFERENCE_AUDIO", "purpose": "Authorized reference-speaker audio for reload and held-out synthesis." },
+    { "name": "REFERENCE_TEXT", "purpose": "Transcript matching the authorized reference audio." },
+    { "name": "SELECTED_ADAPTER_NAME", "purpose": "Single safe LoRA checkpoint directory selected for reload." },
+    { "name": "GENERATION_PLAN", "purpose": "Frozen Instavar Voice generation plan containing this candidate." },
+    { "name": "CANDIDATE_ID", "purpose": "Candidate identifier present in the frozen generation plan." },
+    { "name": "TRAIN_ENGINE", "purpose": "Explicit torch_ddp or deepspeed training engine." }
+  ],
+  "commands": {
+    "preflight": ["{python}", "scripts/instavar_voice_lifecycle.py", "preflight"],
+    "train": ["{python}", "scripts/instavar_voice_lifecycle.py", "train"],
+    "infer": ["{python}", "scripts/instavar_voice_lifecycle.py", "infer"],
+    "evaluate": ["{python}", "scripts/instavar_voice_lifecycle.py", "evaluate"],
+    "package": ["{python}", "scripts/instavar_voice_lifecycle.py", "package"]
+  },
+  "expected_artifacts": {
+    "preflight": ["preflight/preflight.json"],
+    "train": ["train/selected-adapter.tar"],
+    "infer": ["infer/candidate.wav"],
+    "evaluate": ["evaluate/evaluation-bundle.tar"],
+    "package": ["package/adapter-package.tar"]
+  },
+  "timeout_seconds": {
+    "preflight": 1800,
+    "train": 86400,
+    "infer": 3600,
+    "evaluate": 21600,
+    "package": 1800
+  }
+}
