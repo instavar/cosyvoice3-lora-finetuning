@@ -1,6 +1,6 @@
 # Instavar Voice conformance
 
-This repository declares its model-specific adaptation and runtime surface in `instavar-voice-capabilities.json`. The manifest uses the public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation) pinned by CI to merge commit `b5e2995a53bcbdbb307241a2a68a37bd0bc04499`.
+This repository declares its model-specific adaptation and runtime surface in `instavar-voice-capabilities.json`. The manifest uses the public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation) pinned by CI to merge commit `56b32c954e950fe915d4c6595c0630985576a9b7`.
 
 Capability schema 1.2 records each LoRA lifecycle stage separately and preserves the six invalid emotion-control rows as a negative lifecycle result. It also names the exact blockers for a matched base-model comparison.
 
