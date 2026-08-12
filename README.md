@@ -203,7 +203,7 @@ The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
 evaluation plan, and packages provenance. Validate it with evaluator revision
-`e1229101703582dd0db0b84ddf1698a9348bc70e`. Use the companion tools directly;
+`3af85259470914e044bf95808ab76ff417107de1`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
@@ -384,7 +384,7 @@ Tools in this repo are Apache-2.0 licensed. CosyVoice itself is under the [CosyV
 [`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation).
 
 The lifecycle preserves invalid generations as explicit rows, then uses
-evaluator revision `e1229101703582dd0db0b84ddf1698a9348bc70e` to bind timing,
+evaluator revision `3af85259470914e044bf95808ab76ff417107de1` to bind timing,
 duration, and peak-memory fields to the frozen plan and live output audio. Use
 the packaged `objective-observations.json`, not the raw generation file, for a
 version 1.1 runtime comparison.
@@ -396,6 +396,10 @@ generation-plan-bound ASR reference text from observation-declared strings.
 Version 0.21 adds plan-bound category strata so pronunciation, local-context,
 and long-form proxy regressions remain visible instead of disappearing into one
 candidate mean.
+Version 0.22 carries frozen lexical anchors and accepted ASR forms into the
+generation plan, reports hit, miss, coverage, and matched deltas, and rejects
+candidate-specific alias drift. Phrase hits remain recognition evidence, not
+pronunciation or accent judgments.
 This companion bundles neither model
 weights nor optional extractor dependencies and runs neither learned metric
 automatically. Run them explicitly after generation with trusted, content-addressed
