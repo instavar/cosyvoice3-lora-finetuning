@@ -186,6 +186,45 @@ The upstream `cosyvoice3.yaml` sets `max_epoch: 200`. If you pass a custom confi
 
 ## Evaluation
 
+### Frozen multi-prompt runtime evaluation
+
+Use `tools/run_evaluation_suite.py` to execute a complete Instavar Voice plan
+through one loaded PyTorch adapter. Add `--vllm-dir` to create or reuse a merged
+vLLM export and run the same plan through that runtime. The runner uses each
+frozen seed exactly once and records a failed row instead of searching for a
+replacement seed. This differs intentionally from the exploratory sample
+generator, where retries help operators find an audible example.
+
+The runner also rejects implausibly short or silent output. CosyVoice can raise
+inside its background LLM thread while the parent call still returns a roughly
+0.04-second WAV, so process exit and non-empty audio are not sufficient runtime
+evidence.
+
+```bash
+python tools/run_evaluation_suite.py \
+  --cosyvoice-dir /path/to/CosyVoice \
+  --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+  --lora-dir exp/female01/cosyvoice3/llm/lora/epoch_12 \
+  --prompt-wav /path/to/reference.wav \
+  --prompt-text "The exact reference transcript." \
+  --generation-plan evaluation/generation-plan.json \
+  --candidate-id cosyvoice3-epoch12-pytorch \
+  --output-dir evaluation/cosyvoice3-epoch12-pytorch
+```
+
+The early-stop option now synchronizes its decision across all initialized
+training ranks with an all-reduce before any rank leaves the epoch loop. Run
+the bounded control-plane smoke with:
+
+```bash
+torchrun --standalone --nproc-per-node=2 \
+  tools/check_distributed_early_stop.py \
+  --output-dir evaluation/distributed-early-stop-smoke
+```
+
+That smoke proves rank agreement in the control helper. It does not replace a
+real multi-rank CosyVoice training reproduction.
+
 ```bash
 # Generate samples from a LoRA checkpoint
 python tools/infer_cosyvoice3_lora.py \
