@@ -336,11 +336,24 @@ equivalence, or defense against every adversarial filesystem race.
 ### Frozen multi-prompt runtime evaluation
 
 Use `tools/run_evaluation_suite.py` to execute a complete Instavar Voice plan
-through one loaded PyTorch adapter. Add `--vllm-dir` to create or reuse a merged
-vLLM export and run the same plan through that runtime. The runner uses each
+through an explicit unchanged Base, PyTorch adapter, or merged vLLM condition.
+Legacy commands that provide `--lora-dir` still infer the adapter mode, but new
+evidence should always pass `--inference-mode`. Add `--vllm-dir` with
+`--inference-mode merged-vllm` to create or reuse a merged export and run the
+same plan through that runtime. The runner uses each
 frozen seed exactly once and records a failed row instead of searching for a
 replacement seed. This differs intentionally from the exploratory sample
 generator, where retries help operators find an audible example.
+
+Base mode is a true unchanged-checkpoint zero-shot control. It forbids LoRA and
+merged artifacts, verifies the required upstream model assets and reference WAV
+before model load, and records `artifact_mode: base` in every attempt. Adapter
+mode requires the exact PEFT artifact pair and records `artifact_mode: adapter`.
+Both modes use the same prompt WAV, prompt transcript, plan row, seed, frontend,
+speed, and `inference_zero_shot` or `inference_instruct2` route. This makes a
+matched Base-versus-adapter pair a same-conditioning adaptation comparison. It
+does not by itself prove loader honesty, numerical determinism, perceptual
+benefit, or speaker identity.
 
 The runner also rejects implausibly short or silent output. CosyVoice can raise
 inside its background LLM thread while the parent call still returns a roughly
@@ -366,9 +379,23 @@ rows through the corrected route before making any claim about instruction
 obedience or the adapted checkpoint's emotion support.
 
 ```bash
+# Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
   --cosyvoice-dir /path/to/CosyVoice \
   --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+  --inference-mode base \
+  --prompt-wav /path/to/reference.wav \
+  --prompt-text "The exact reference transcript." \
+  --generation-plan evaluation/generation-plan.json \
+  --candidate-id cosyvoice3-base-pytorch \
+  --runtime-id pytorch-base \
+  --output-dir evaluation/cosyvoice3-base-pytorch
+
+# Generate the matched adapter condition.
+python tools/run_evaluation_suite.py \
+  --cosyvoice-dir /path/to/CosyVoice \
+  --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+  --inference-mode adapter \
   --lora-dir exp/female01/cosyvoice3/llm/lora/epoch_12 \
   --prompt-wav /path/to/reference.wav \
   --prompt-text "The exact reference transcript." \

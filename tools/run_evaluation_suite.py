@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a frozen Instavar Voice plan through one loaded CosyVoice3 adapter runtime."""
+"""Run a frozen Instavar Voice plan through one explicit CosyVoice3 condition."""
 
 from __future__ import annotations
 
@@ -21,7 +21,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cosyvoice-dir", type=Path, required=True)
     parser.add_argument("--pretrained-dir", required=True)
-    parser.add_argument("--lora-dir", required=True)
+    parser.add_argument(
+        "--inference-mode",
+        choices=("base", "adapter", "merged-vllm"),
+        help="Explicit artifact condition. Legacy LoRA invocations are inferred.",
+    )
+    parser.add_argument("--lora-dir")
     parser.add_argument("--prompt-wav", required=True)
     parser.add_argument("--prompt-text", required=True)
     parser.add_argument("--generation-plan", type=Path, required=True)
@@ -81,6 +86,9 @@ def runtime_artifact_fields(args: argparse.Namespace) -> dict[str, str]:
 
 def main() -> int:
     args = parse_args()
+    from evaluation_contract import resolve_inference_mode
+
+    args.inference_mode = resolve_inference_mode(args, argparse.ArgumentParser())
     artifact_fields = runtime_artifact_fields(args)
     cosyvoice_dir = args.cosyvoice_dir.resolve()
     matcha_dir = cosyvoice_dir / "third_party" / "Matcha-TTS"
@@ -96,10 +104,11 @@ def main() -> int:
         validate_generation_inputs,
     )
     from generate_cosyvoice3_samples import seed_everything
-    from infer_cosyvoice3_lora import (
-        apply_lora_to_cosyvoice3,
-        enable_vllm_with_merged_lora,
-    )
+    if args.inference_mode != "base":
+        from infer_cosyvoice3_lora import (
+            apply_lora_to_cosyvoice3,
+            enable_vllm_with_merged_lora,
+        )
 
     plan = json.loads(args.generation_plan.read_text(encoding="utf-8"))
     if plan.get("schema_version") not in {"1.0.0", "1.1.0"}:
@@ -124,9 +133,11 @@ def main() -> int:
 
     cosyvoice = CosyVoice3(args.pretrained_dir, fp16=args.fp16)
     peft_model = None
-    if not (args.vllm_dir and args.reuse_vllm_dir):
+    if args.inference_mode != "base" and not (
+        args.inference_mode == "merged-vllm" and args.reuse_vllm_dir
+    ):
         peft_model = apply_lora_to_cosyvoice3(cosyvoice, args.lora_dir)
-    if args.vllm_dir:
+    if args.inference_mode == "merged-vllm":
         enable_vllm_with_merged_lora(
             cosyvoice,
             peft_model,
@@ -144,6 +155,15 @@ def main() -> int:
             torch.cuda.synchronize()
         started = time.perf_counter()
         planned_instruction_route = generation_route(row.get("instruction"))
+        device_family = "cuda" if torch.cuda.is_available() else "cpu"
+        artifact_mode = (
+            "merged" if args.inference_mode == "merged-vllm" else args.inference_mode
+        )
+        runtime = (
+            f"cosyvoice3_vllm_{device_family}_merged"
+            if args.inference_mode == "merged-vllm"
+            else f"cosyvoice3_pytorch_{device_family}_{artifact_mode}"
+        )
         observation = {
             "observation_schema_version": "1.0.0",
             "sample_id": row["sample_id"],
@@ -153,7 +173,8 @@ def main() -> int:
             "seed": row["seed"],
             "requested_text": row["text"],
             "valid": False,
-            "runtime": "cosyvoice3_vllm_merged" if args.vllm_dir else "cosyvoice3_pytorch_adapter",
+            "runtime": runtime,
+            "artifact_mode": artifact_mode,
             **artifact_fields,
             "requested_instruction": row.get("instruction"),
             "instruction_requested": bool(row.get("instruction")),

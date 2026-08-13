@@ -116,6 +116,32 @@
   },
   "runtimes": [
     {
+      "id": "pytorch_base",
+      "status": "experimental",
+      "artifact_mode": "base",
+      "streaming": true,
+      "profile": "reference",
+      "device": "cuda",
+      "interface": "cli",
+      "precision": "runtime default",
+      "batching": false,
+      "conformance": {
+        "status": "not_run",
+        "clean_checkout": false,
+        "fresh_process": false,
+        "prompt_count": 0,
+        "seed_count": 0
+      },
+      "evidence": [
+        {
+          "level": "repository_declared",
+          "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
+          "claim": "The evaluation runner exposes an explicit unchanged Base mode with the same zero-shot and instruction routes as the adapter condition."
+        }
+      ],
+      "notes": "Contract-tested only. A clean-checkout real-model observation remains required."
+    },
+    {
       "id": "pytorch",
       "status": "supported",
       "artifact_mode": "adapter",
@@ -221,7 +247,7 @@
       "baseline_candidate": "cosyvoice3-base",
       "adapted_candidate": "cosyvoice3-epoch-12",
       "blockers": [
-        "No frozen base-model observation matrix exists for the same prompts and seeds.",
+        "The explicit Base mode has contract coverage but no clean-checkout real-model observation.",
         "Six adapted rows assigned to emotion-control categories are invalid and need a corrected instruction-route rerun.",
         "Blind listening ratings are incomplete."
       ]
@@ -235,6 +261,7 @@
   },
   "known_gaps": [
     "Perceptual ranking of the selected checkpoint remains pending.",
+    "The explicit unchanged Base evaluation mode has dependency-free contract coverage but no recorded real-model run.",
     "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
     "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
