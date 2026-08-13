@@ -489,6 +489,22 @@ live input-batch request receipts. Use `--sample-id <exact-plan-sample-id>` to
 run exactly one frozen row per process when global runtime state must not carry
 between matched observations.
 
+After combining the per-row observations, validate the frozen calibration,
+complete plan coverage, live request counts, receipt status, request ordinals,
+and standalone-versus-combined token identities with:
+
+```bash
+python tools/validate_split_boundary_receipts.py \
+  --plan evaluation/generation-plan.json \
+  --protocol evaluation/split-boundary-protocol.json \
+  --observations evaluation/observations-raw.json \
+  --output evaluation/request-receipt-validation.json
+```
+
+The validator fails on missing, unexpected, or duplicate rows and malformed
+request shapes. A passing report validates receipt relationships only, not
+content, waveform identity, deterministic execution, or perceptual quality.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
