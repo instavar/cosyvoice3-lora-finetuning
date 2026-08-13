@@ -173,7 +173,6 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
                     ),
                     "engine_config_seed": _engine_config_seed(llm),
                     "request_generator_state_captured": generator is not None,
-                    "request_id_matches_wrapper": request.req_id == uuid,
                 }
             )
             receipt["registered_request_parameters"] = {

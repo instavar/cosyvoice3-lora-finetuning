@@ -471,8 +471,13 @@ It failed closed because a similarly named sampling-state API existed in the
 installation but was not on the live engine path. The retained failure moved
 capture to the live `GPUInputBatch` path and corrected the upstream seed model:
 unseeded requests use the process-global generator, not a newly selected
-request seed. A new smoke remains required before the receipts support a larger
-experiment.
+request seed. At that point, a new smoke remained required before a larger
+experiment. The corrected smoke then passed and is documented in
+[`reports/vllm-input-batch-receipt-smoke-2026-08-14.md`](reports/vllm-input-batch-receipt-smoke-2026-08-14.md).
+It executed one complete live receipt for each valid row, distinguished the
+global and request-local generator paths, and retained only output-token hashes
+and counts. The mechanism is now ready for the preregistered split-boundary
+follow-up, within its serial-runner boundary.
 
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
