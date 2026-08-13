@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "date": "2026-08-14",
+  "date_basis": {
+    "local_timezone": "Asia/Singapore",
+    "server_timestamp": "2026-08-13T18:55:32Z",
+    "source": "GitHub Actions run 31733246713"
+  },
+  "purpose": "Verify corrected request-level receipt capture on the live vLLM GPUInputBatch path.",
+  "prior_failed_smoke": {
+    "report": "reports/vllm-request-receipt-smoke-2026-08-14.md",
+    "evidence_root": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260814_cosyvoice3_vllm_request_receipt_smoke_v1",
+    "disposition": "retained_without_replacement"
+  },
+  "environment": {
+    "producer_revision": "d86e5c5149ec95c688d4e17dcd77ccb560d50a54",
+    "evaluator_revision": "2812e200233804fde685c35ea1da1cbf9fe8ef4b",
+    "evaluator_version": "0.41.0",
+    "vllm_version": "0.15.1"
+  },
+  "generation_plan": {
+    "path": "evaluation/preregistration/cosyvoice3-epoch12-vllm-input-batch-smoke-plan-2026-08-14.json",
+    "sha256": "2143c7db8fcd0107aceec92d4fa037b076d8b5a159097fd181fe69298171da5b"
+  },
+  "artifact_binding": {
+    "vllm_export_path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260813_cosyvoice3_pytorch_vllm_v1/artifacts/epoch12-vllm-merged-export",
+    "artifact_set_sha256": "db7b3b425b4f8b4353c8111d49f57ebbf3f351a04352eadb3adb2ae80a26c866",
+    "tree_sha256": "624f504ea3558f391279fcbcdc7109a38849ea277bb5ab1ef00323c82a30cc22",
+    "relation": "derived"
+  },
+  "conditions": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-input-batch-smoke",
+      "sampling_profile": "upstream",
+      "fresh_process": true
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-input-batch-smoke",
+      "sampling_profile": "request-seeded",
+      "fresh_process": true
+    }
+  ],
+  "acceptance": {
+    "planned_rows_must_be_retained": 2,
+    "request_count_per_row": 1,
+    "request_receipt_schema_version": "1.0.0",
+    "sampling_state_capture": "vllm.v1.worker.gpu_input_batch.InputBatch.add_request",
+    "upstream_seed_source": "global_engine_generator",
+    "upstream_request_generator_seed": null,
+    "upstream_engine_config_seed": 0,
+    "request_seeded_generator_seed": 42,
+    "request_seeded_seed_source": "supplied_request_seed",
+    "require_applied_input_batch_state": true,
+    "require_registered_request_parameters": true,
+    "require_positive_output_token_count": true,
+    "require_sha256_output_token_hash": true,
+    "forbid_retained_token_content": true,
+    "artifact_verification_before_and_after": true
+  },
+  "decision_boundary": "This smoke can validate receipt execution and schema fields only. The upstream engine configuration seed does not capture the evolving process-global generator state. The smoke cannot establish content quality, perceptual quality, runtime equivalence, determinism, or a causal sampling explanation."
+}
