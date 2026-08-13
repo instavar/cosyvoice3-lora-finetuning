@@ -21,7 +21,7 @@ def _require_assets(root: Path, name: str, assets: tuple[str, ...]) -> None:
 def resolve_inference_mode(
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> str:
-    """Resolve exactly one unchanged-base, adapter, or merged-vLLM condition."""
+    """Resolve exactly one unchanged-base, adapter, or merged condition."""
     mode = args.inference_mode
     if mode is None:
         if args.lora_dir and args.vllm_dir:
@@ -30,8 +30,10 @@ def resolve_inference_mode(
             mode = "adapter"
         else:
             parser.error("base evaluation requires explicit --inference-mode base")
-    if mode not in {"base", "adapter", "merged-vllm"}:
-        parser.error("inference mode must be base, adapter, or merged-vllm")
+    if mode not in {"base", "adapter", "merged-pytorch", "merged-vllm"}:
+        parser.error(
+            "inference mode must be base, adapter, merged-pytorch, or merged-vllm"
+        )
 
     pretrained = Path(args.pretrained_dir)
     try:
@@ -59,9 +61,9 @@ def resolve_inference_mode(
     except ValueError as error:
         parser.error(str(error))
 
-    if mode == "adapter":
+    if mode in {"adapter", "merged-pytorch"}:
         if args.vllm_dir or args.reuse_vllm_dir:
-            parser.error("adapter mode forbids --vllm-dir and --reuse-vllm-dir")
+            parser.error(f"{mode} mode forbids --vllm-dir and --reuse-vllm-dir")
         return mode
 
     if not args.vllm_dir:

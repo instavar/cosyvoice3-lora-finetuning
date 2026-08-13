@@ -103,6 +103,23 @@ class EvaluationSuiteContractTests(unittest.TestCase):
             "merged-vllm",
         )
 
+    def test_merged_pytorch_requires_adapter_and_forbids_vllm_paths(self) -> None:
+        merged = self.args("merged-pytorch", lora_dir=str(self.adapter))
+        self.assertEqual(
+            resolve_inference_mode(merged, self.parser), "merged-pytorch"
+        )
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(self.args("merged-pytorch"), self.parser)
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(
+                self.args(
+                    "merged-pytorch",
+                    lora_dir=str(self.adapter),
+                    vllm_dir=str(self.root / "merged"),
+                ),
+                self.parser,
+            )
+
     def test_missing_base_asset_and_symlinked_prompt_fail_closed(self) -> None:
         (self.base / "llm.pt").unlink()
         with self.assertRaises(SystemExit):
@@ -120,7 +137,10 @@ class EvaluationSuiteContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         ast.parse(source)
-        self.assertIn('choices=("base", "adapter", "merged-vllm")', source)
+        self.assertIn(
+            'choices=("base", "adapter", "merged-pytorch", "merged-vllm")',
+            source,
+        )
         self.assertIn(
             'if args.inference_mode != "base":\n'
             "        from infer_cosyvoice3_lora import",
@@ -129,6 +149,8 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         self.assertIn('if args.inference_mode != "base"', source)
         self.assertIn('"artifact_mode": artifact_mode', source)
         self.assertIn('f"cosyvoice3_pytorch_{device_family}_{artifact_mode}"', source)
+        self.assertIn('args.inference_mode == "merged-pytorch"', source)
+        self.assertIn("merge_lora_into_cosyvoice3(cosyvoice, peft_model)", source)
         self.assertIn("BackgroundThreadFailureCapture", source)
         self.assertIn('"background_thread_failures"', source)
         self.assertIn('"background_thread_exception"', source)

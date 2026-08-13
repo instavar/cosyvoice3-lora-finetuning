@@ -70,6 +70,18 @@ def apply_lora_to_cosyvoice3(cosyvoice: CosyVoice3, lora_dir: str) -> PeftModel:
     return peft_model
 
 
+def merge_lora_into_cosyvoice3(
+    cosyvoice: CosyVoice3, peft_model: PeftModel
+) -> torch.nn.Module:
+    """Merge a loaded adapter and keep the merged LLM on the PyTorch route."""
+    try:
+        merged_model = peft_model.merge_and_unload(safe_merge=True)
+    except TypeError:
+        merged_model = peft_model.merge_and_unload()
+    cosyvoice.model.llm.llm.model = merged_model
+    return merged_model
+
+
 def enable_vllm_with_merged_lora(
     cosyvoice: CosyVoice3,
     peft_model: PeftModel | None,
@@ -88,15 +100,10 @@ def enable_vllm_with_merged_lora(
             "Use a new directory or pass --reuse-vllm-dir after verifying the export."
         )
 
-    encoder = cosyvoice.model.llm.llm
     if not export_dir.exists():
         if peft_model is None:
             raise ValueError("A loaded PEFT model is required to create a new vLLM export")
-        try:
-            merged_model = peft_model.merge_and_unload(safe_merge=True)
-        except TypeError:
-            merged_model = peft_model.merge_and_unload()
-        encoder.model = merged_model
+        merge_lora_into_cosyvoice3(cosyvoice, peft_model)
 
     # Older CosyVoice adapters relied on these names leaking from vLLM's
     # wildcard Qwen2 import. Current vLLM releases no longer export them.

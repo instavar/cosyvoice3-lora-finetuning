@@ -214,6 +214,32 @@
       ]
     },
     {
+      "id": "pytorch_merged",
+      "status": "experimental",
+      "artifact_mode": "merged",
+      "streaming": true,
+      "profile": "experimental",
+      "device": "cuda",
+      "interface": "cli",
+      "precision": "runtime default",
+      "batching": false,
+      "conformance": {
+        "status": "not_run",
+        "clean_checkout": false,
+        "fresh_process": false,
+        "prompt_count": 0,
+        "seed_count": 0
+      },
+      "evidence": [
+        {
+          "level": "repository_declared",
+          "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
+          "claim": "The evaluation runner can merge the selected adapter in memory while retaining PyTorch decoding, providing the missing middle condition for three-way runtime diagnosis."
+        }
+      ],
+      "notes": "Model-free contract coverage only. A real frozen GPU run is required before conformance promotion."
+    },
+    {
       "id": "vllm",
       "status": "supported",
       "artifact_mode": "merged",

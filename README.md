@@ -445,6 +445,14 @@ bindings. A PyTorch adapter and a merged vLLM export must be recorded as
 `exact` and `derived` respectively, so the shared evaluator will not treat
 conversion provenance as exact artifact identity.
 
+Use `--inference-mode merged-pytorch` with the same `--lora-dir` to merge the
+adapter in memory and keep decoding on the PyTorch route. This explicit middle
+condition forbids vLLM export arguments and records `artifact_mode: merged` with
+a PyTorch runtime identity. Compare adapter PyTorch, merged PyTorch, and merged
+vLLM under one new frozen plan to distinguish merge drift from runtime drift.
+The merged-PyTorch path has model-free contract coverage only until a real
+frozen GPU run is recorded.
+
 The early-stop option now synchronizes its decision across all initialized
 training ranks with an all-reduce before any rank leaves the epoch loop. Run
 the bounded control-plane smoke with:

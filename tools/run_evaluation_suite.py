@@ -24,7 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pretrained-dir", required=True)
     parser.add_argument(
         "--inference-mode",
-        choices=("base", "adapter", "merged-vllm"),
+        choices=("base", "adapter", "merged-pytorch", "merged-vllm"),
         help="Explicit artifact condition. Legacy LoRA invocations are inferred.",
     )
     parser.add_argument("--lora-dir")
@@ -109,6 +109,7 @@ def main() -> int:
         from infer_cosyvoice3_lora import (
             apply_lora_to_cosyvoice3,
             enable_vllm_with_merged_lora,
+            merge_lora_into_cosyvoice3,
         )
 
     plan = json.loads(args.generation_plan.read_text(encoding="utf-8"))
@@ -145,6 +146,10 @@ def main() -> int:
             args.vllm_dir,
             reuse_vllm_dir=args.reuse_vllm_dir,
         )
+    elif args.inference_mode == "merged-pytorch":
+        if peft_model is None:
+            raise RuntimeError("merged-pytorch mode requires a loaded PEFT model")
+        merge_lora_into_cosyvoice3(cosyvoice, peft_model)
 
     observations: list[dict] = []
     for row in rows:
@@ -158,7 +163,9 @@ def main() -> int:
         planned_instruction_route = generation_route(row.get("instruction"))
         device_family = "cuda" if torch.cuda.is_available() else "cpu"
         artifact_mode = (
-            "merged" if args.inference_mode == "merged-vllm" else args.inference_mode
+            "merged"
+            if args.inference_mode in {"merged-pytorch", "merged-vllm"}
+            else args.inference_mode
         )
         runtime = (
             f"cosyvoice3_vllm_{device_family}_merged"
