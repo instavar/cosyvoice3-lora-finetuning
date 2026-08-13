@@ -3,7 +3,7 @@
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
-    "evidence_revision": "c9daeee3f0563b6fa1eb1d37037cc62c80469bc6"
+    "evidence_revision": "076d13f2ea5b608b3c4217158e68f0b1ea44f63f"
   },
   "model": {
     "family": "CosyVoice3",
@@ -80,9 +80,14 @@
               "level": "negative_result",
               "ref": "reports/matched-long-form-base-adapter-2026-08-13.md",
               "claim": "A preregistered same-conditioning long-form pair completed in fresh processes, but both candidates produced semantically corrupted content and the epoch-12 adapter had materially worse requested-text WER."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
+              "claim": "The corrected inference_instruct2 route completed six Base and six adapter rows, but all 12 failed requested-text WER and exact instruction-exclusive overlap was found post hoc in eight rows."
             }
           ],
-          "boundary": "The failure is bounded to the selected checkpoint, prompts, seeds, PyTorch path, and an earlier runner that ignored instructions; the corrected route has not been rerun on the real model."
+          "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, upstream route, and PyTorch environment. The blind emotion-obedience pack remains unrated."
         },
         "evaluation": {
           "status": "negative_result",
@@ -96,9 +101,14 @@
               "level": "negative_result",
               "ref": "reports/matched-long-form-base-adapter-2026-08-13.md",
               "claim": "The complete nine-metric contract passed, but requested-text ASR exposed high WER and repetition for both candidates; the post-hoc exact overlap diagnostic additionally flagged Base, not epoch 12."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
+              "claim": "The corrected route produced complete objective evidence, universal WER failures, and post-hoc instruction-overlap attribution; it does not prove emotion obedience or adaptation benefit."
             }
           ],
-          "boundary": "The suite detects runtime failure but the historical rows cannot support emotion-obedience claims; the corrected dispatch remains repository-declared until a real rerun."
+          "boundary": "Corrected route execution is validated for this focused slice, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
         },
         "packaging": {
           "status": "repository_declared",
@@ -139,18 +149,23 @@
         "status": "negative_result",
         "clean_checkout": true,
         "fresh_process": true,
-        "prompt_count": 1,
-        "seed_count": 1,
-        "report": "reports/matched-long-form-base-adapter-2026-08-13.md"
+        "prompt_count": 2,
+        "seed_count": 3,
+        "report": "reports/matched-emotion-route-base-adapter-2026-08-13.md"
       },
       "evidence": [
         {
           "level": "negative_result",
           "ref": "reports/matched-long-form-base-adapter-2026-08-13.md",
           "claim": "The explicit unchanged Base mode completed the frozen long-form route in a fresh process, but its semantically corrupted output is not a quality success."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
+          "claim": "Base completed six corrected inference_instruct2 rows in a clean fresh process, but all failed requested-text WER and five had post-hoc exact instruction overlap."
         }
       ],
-      "notes": "Real-model execution is validated for one prompt and seed. Quality conformance is negative."
+      "notes": "Real-model corrected-route execution is validated for two prompts and three seeds. Quality conformance is negative."
     },
     {
       "id": "pytorch",
@@ -166,9 +181,9 @@
         "status": "negative_result",
         "clean_checkout": true,
         "fresh_process": true,
-        "prompt_count": 1,
-        "seed_count": 1,
-        "report": "reports/matched-long-form-base-adapter-2026-08-13.md"
+        "prompt_count": 2,
+        "seed_count": 3,
+        "report": "reports/matched-emotion-route-base-adapter-2026-08-13.md"
       },
       "evidence": [
         {
@@ -180,6 +195,11 @@
           "level": "negative_result",
           "ref": "reports/matched-long-form-base-adapter-2026-08-13.md",
           "claim": "The epoch-12 adapter completed a clean fresh-process long-form run but was materially worse than Base on requested-text WER."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
+          "claim": "The epoch-12 adapter completed six corrected inference_instruct2 rows in a clean fresh process, but all failed requested-text WER and three had post-hoc exact instruction overlap."
         }
       ]
     },
@@ -261,11 +281,11 @@
     "matched_comparison": {
       "status": "partial",
       "baseline_candidate": "cosyvoice3-base",
-      "adapted_candidate": "cosyvoice3-epoch-12",
+      "adapted_candidate": "cosyvoice3-epoch12",
       "blockers": [
         "The one-pair long-form result requires preregistered multi-seed replication before estimating failure frequency.",
-        "Six adapted rows assigned to emotion-control categories are invalid and need a corrected instruction-route rerun.",
-        "Blind listening ratings are incomplete."
+        "The corrected emotion-route blind listening ratings are incomplete.",
+        "PyTorch and merged-vLLM output equivalence remains untested."
       ]
     }
   },
@@ -278,8 +298,7 @@
   "known_gaps": [
     "Perceptual ranking of the selected checkpoint remains pending.",
     "The first explicit same-conditioning long-form run produced semantically corrupted content for both Base and epoch 12. The post-hoc evaluator 0.37 diagnostics flagged high WER and repetition for both, plus exact retained-reference overlap for Base only; preregister the thresholds and replicate across frozen seeds.",
-    "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
-    "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
+    "The corrected inference_instruct2 run produced valid WAVs but universal requested-text WER failure and frequent post-hoc exact instruction overlap; test any frontend or instruction rewrite under a new frozen plan.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
