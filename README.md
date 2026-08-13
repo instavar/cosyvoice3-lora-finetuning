@@ -436,7 +436,9 @@ current vLLM request, which passes top-k 25 but leaves vLLM 0.15.1 at its
 top-p 1.0 default with no per-request seed. `request-seeded` adds only the
 frozen plan-row seed. `request-seeded-top-p-0.8` adds top-p 0.8 after the seed,
 matching the corresponding PyTorch nucleus threshold. Every vLLM observation
-records the selected profile and effective request parameters.
+records the selected profile, row-scoped request ordinals, the runtime-applied
+sampling state, request limits, runtime-selected or supplied seed, output token
+count, and an output-token hash. The receipt retains no token content.
 
 These profiles are diagnostic controls, not an equivalence shim. PyTorch still
 uses CosyVoice repetition-aware sampling, which vLLM's native request sampler
@@ -444,8 +446,10 @@ does not reproduce. Compare `upstream` to `request-seeded`, then compare
 `request-seeded` to `request-seeded-top-p-0.8`, so each transition changes one
 declared variable. Exact output hashes remain required because a request seed
 does not prove deterministic runtime execution. The wrapper is process-local
-and briefly replaces vLLM's request constructor while a serial request starts.
-It is intended for these serial diagnostic runners, not a concurrent server.
+and briefly replaces vLLM's request constructor and sampling-state registration
+hook while a serial request starts. Receipt capture is pinned to vLLM 0.15.1
+and fails closed on version drift or a missing sampling-state observation. It is
+intended for these serial diagnostic runners, not a concurrent server.
 
 The preregistered multi-prompt result is documented in
 [`reports/matched-vllm-sampling-profiles-2026-08-14.md`](reports/matched-vllm-sampling-profiles-2026-08-14.md).
@@ -454,9 +458,10 @@ prompt and seed pairs. Adding a request seed changed only the three structured
 long-form rows, while adding top-p 0.8 changed every row and produced one
 near-silent invalid output. Every evaluable row still failed requested-text
 WER. The result supports bounded request-profile diagnosis, not quality or
-runtime-equivalence promotion. Per-request token and seed receipts remain the
-next instrumentation requirement because text length and frontend request
-count are confounded in the long-form effect.
+runtime-equivalence promotion. Request-level receipts now remove the prior
+instrumentation gap, but the published study predates them. Text length and
+frontend request count therefore remain confounded in that result until a new
+split-boundary experiment is run with the receipt-capable runner.
 
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.

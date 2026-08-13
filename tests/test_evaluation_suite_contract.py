@@ -229,6 +229,13 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         self.assertIn("BackgroundThreadFailureCapture", source)
         self.assertIn('"background_thread_failures"', source)
         self.assertIn('"background_thread_exception"', source)
+        self.assertIn("begin_vllm_observation", source)
+        generation_end = source.index(
+            'if args.inference_mode == "merged-vllm":\n'
+            '            observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)'
+        )
+        generation_try = source.index("        background_capture =")
+        self.assertGreater(generation_end, generation_try)
 
     def test_inference_helper_fails_after_preserving_background_failure_audio(self) -> None:
         source = (ROOT / "tools" / "infer_cosyvoice3_lora.py").read_text(

@@ -340,6 +340,11 @@
           "level": "negative_result",
           "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
           "claim": "Two upstream runs reproduced nine WAVs byte for byte. Request seeding changed only structured-long-form rows, top-p 0.8 changed all rows and caused one near-silent output, and every profile failed content faithfulness."
+        },
+        {
+          "level": "repository_declared",
+          "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
+          "claim": "The serial diagnostic runner records vLLM 0.15.1 request ordinals, runtime-applied sampling state, seeds, output token counts, and token hashes without retaining token content, and fails closed when the internal capture contract drifts."
         }
       ]
     },
@@ -399,7 +404,7 @@
       "blockers": [
         "The corrected emotion-route blind listening ratings are incomplete.",
         "The 45-file sampling-profile blind pack remains unrated and cannot override universal content failure.",
-        "The row-level sampling receipt does not record actual vLLM request ordinals, runtime-selected upstream seeds, token counts, or token hashes, so text length and frontend request count remain confounded."
+        "The published sampling-profile study predates request-level receipts, so text length and frontend request count remain confounded until a new split-boundary experiment uses the receipt-capable runner."
       ]
     }
   },
@@ -417,6 +422,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. Add per-request seed, ordinal, token-count, and token-hash receipts before a split-boundary follow-up."
+    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. The runner now records request-level receipts; run a preregistered split-boundary follow-up before attributing the effect to request count."
   ]
 }

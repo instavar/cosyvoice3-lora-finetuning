@@ -178,11 +178,15 @@ def main() -> int:
         seed_everything(int(row["seed"]))
         if args.inference_mode == "merged-vllm":
             from vllm_sampling_controls import (
-                set_vllm_request_seed,
+                begin_vllm_observation,
                 vllm_sampling_evidence,
             )
 
-            set_vllm_request_seed(cosyvoice, int(row["seed"]))
+            begin_vllm_observation(
+                cosyvoice,
+                str(row["sample_id"]),
+                int(row["seed"]),
+            )
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.synchronize()
@@ -218,8 +222,6 @@ def main() -> int:
             "instruction_applied": False,
             "background_thread_check": "threading_excepthook_during_stream_consumption",
         }
-        if args.inference_mode == "merged-vllm":
-            observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)
         background_capture = BackgroundThreadFailureCapture()
         try:
             with background_capture:
@@ -313,6 +315,8 @@ def main() -> int:
                     "error": str(error),
                 }
             )
+        if args.inference_mode == "merged-vllm":
+            observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)
         observations.append(observation)
         write_observations(args.output_dir / "generation-observations.json", observations)
     return 0 if args.allow_invalid_output or all(row["valid"] for row in observations) else 1
