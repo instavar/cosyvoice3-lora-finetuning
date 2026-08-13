@@ -42,8 +42,10 @@ verify the no-failure path. Source-contract tests also require both production
 entry points to retain the capture boundary.
 
 The complete companion suite passed 80 tests locally with the pinned evaluator
-available on `PYTHONPATH`. Hosted CI and the implementation revision are
-recorded after publication.
+available on `PYTHONPATH`. Focused Ruff F checks passed and the new helper tests
+passed Ruff formatting checks. Implementation commit
+`0c6f7b0b17aeb85a71d9fff335e081fe6bde0d9e` passed hosted Instavar Voice
+contract run `31682801829` on 2026-08-13.
 
 ## Scope and boundary
 
