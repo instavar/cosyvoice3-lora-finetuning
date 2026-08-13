@@ -1,0 +1,125 @@
+{
+  "analysis_mode": "transfer_test",
+  "artifact_bindings": {
+    "reloaded_merged_pytorch": {
+      "artifact_set_sha256": "35d67b96b76ebe9716036a94a371842876682d595670a4d26e03ded177f399ab",
+      "path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260813_cosyvoice3_four_way_v1/artifacts/epoch12-merged-pytorch",
+      "relation": "derived",
+      "tree_sha256": "6d93ca3d777e3c357dae495cd2cd038c7f040ed53b5a3fdaf43fb61ed6b0221c"
+    },
+    "source_adapter": {
+      "artifact_set_sha256": "de6cfceafb0155d8bf89336d4c39618b46bcf9ba230da5f5e0c806dfe0d0a87f",
+      "path": "/mnt/work/chee-wei-jie/voice-models/CosyVoice_runs/female01_cv3_lora_lr5e5_run1/exp/female01/cosyvoice3/llm/deepspeed/epoch_12_whole",
+      "relation": "exact",
+      "tree_sha256": "8bd5e1ca24c71a099cec6612230c9c448cbcff0c3f0ee15ad7a15b26e7bd2bb8"
+    },
+    "vllm_export": {
+      "artifact_set_sha256": "db7b3b425b4f8b4353c8111d49f57ebbf3f351a04352eadb3adb2ae80a26c866",
+      "path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260813_cosyvoice3_pytorch_vllm_v1/artifacts/epoch12-vllm-merged-export",
+      "relation": "derived",
+      "tree_sha256": "624f504ea3558f391279fcbcdc7109a38849ea277bb5ab1ef00323c82a30cc22"
+    }
+  },
+  "conditions": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "fresh_process": true,
+      "inference_mode": "reloaded-merged-pytorch",
+      "order": 1,
+      "sampling_profile": "not_applicable"
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "fresh_process": true,
+      "inference_mode": "merged-vllm",
+      "order": 2,
+      "sampling_profile": "upstream"
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "fresh_process": true,
+      "inference_mode": "merged-vllm",
+      "order": 3,
+      "sampling_profile": "request-seeded"
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "fresh_process": true,
+      "inference_mode": "merged-vllm",
+      "order": 4,
+      "sampling_profile": "request-seeded-top-p-0.8"
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "fresh_process": true,
+      "inference_mode": "merged-vllm",
+      "order": 5,
+      "sampling_profile": "upstream"
+    }
+  ],
+  "date": "2026-08-14",
+  "date_basis": {
+    "local_timezone": "Asia/Singapore",
+    "server_timestamp": "2026-08-13T17:47:17Z",
+    "source": "GitHub Actions run 31727455686"
+  },
+  "decision_rules": {
+    "content_gate_precedes_secondary_metrics": true,
+    "failures_are_retained_and_not_replaced": true,
+    "primary_content_thresholds": {
+      "maximum_reference_exclusive_four_gram_hits": 1,
+      "maximum_repeated_four_gram_excess": 0.05,
+      "maximum_requested_text_wer": 0.1,
+      "require_evaluable_asr": true
+    },
+    "proves_runtime_equivalence": false,
+    "promotion_requires_all_planned_rows_to_pass_content": true
+  },
+  "environment": {
+    "evaluator_revision": "2812e200233804fde685c35ea1da1cbf9fe8ef4b",
+    "evaluator_version": "0.41.0",
+    "producer_revision": "19dded017efbd901abf0547330f7296cea757b17",
+    "vllm_version": "0.15.1"
+  },
+  "generation_plan": {
+    "path": "evaluation/preregistration/cosyvoice3-epoch12-vllm-sampling-plan-2026-08-14.json",
+    "sha256": "dee7c76b2de146822ca9284027562af633732e8b0fb650eacb849ace9bdf3183"
+  },
+  "hypotheses": [
+    {
+      "id": "h1_request_seed",
+      "statement": "Adding only the plan-row request seed changes vLLM output relative to upstream-a beyond any drift observed between upstream-a and upstream-b."
+    },
+    {
+      "id": "h2_top_p",
+      "statement": "Adding only top-p 0.8 after request seeding changes vLLM output relative to request-seeded beyond the unchanged-upstream rerun drift."
+    },
+    {
+      "id": "h3_transfer",
+      "statement": "Any profile effect replicates across local context, names and numbers, and structured long-form prompts rather than appearing in only one prompt."
+    }
+  ],
+  "measurement_boundaries": [
+    "The vLLM profiles record request parameters, not internal sampler execution.",
+    "Request seed and top-p 0.8 do not reproduce CosyVoice PyTorch repetition-aware sampling.",
+    "The repeated upstream condition bounds fresh-process rerun drift but does not eliminate all temporal or hardware confounding.",
+    "ASR phrase recognition does not establish correct pronunciation, accent fidelity, cadence, naturalness, or preference.",
+    "Prosody and speaker metrics do not replace blind listening.",
+    "All conclusions remain bounded to the frozen model, artifacts, reference, prompts, seeds, host, and library versions."
+  ],
+  "required_evidence": [
+    "artifact verification before and after generation",
+    "one observation for every planned row including failures",
+    "vLLM sampling profile and effective request parameters per vLLM row",
+    "exact WAV SHA-256 per valid row",
+    "audio validity probes",
+    "faster-whisper ASR",
+    "SpeechBrain ECAPA speaker similarity",
+    "prosody proxies",
+    "content-faithfulness report",
+    "matched adjacent-condition comparisons",
+    "upstream-a versus upstream-b rerun comparison",
+    "counterbalanced blind pack after objective evaluation"
+  ],
+  "schema_version": "1.0.0"
+}

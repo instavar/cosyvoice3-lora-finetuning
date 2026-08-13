@@ -1,0 +1,615 @@
+{
+  "candidate_ids": [
+    "cosyvoice3-epoch12-reloaded-merged-pytorch",
+    "cosyvoice3-epoch12-vllm-upstream-a",
+    "cosyvoice3-epoch12-vllm-request-seeded",
+    "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+    "cosyvoice3-epoch12-vllm-upstream-b"
+  ],
+  "generation_requirements": {
+    "frozen_generation_settings": true,
+    "record_failures_as_observations": true,
+    "same_transcripts": true
+  },
+  "prompt_count": 3,
+  "prompt_pack": {
+    "id": "instavar-singapore-english",
+    "sha256": "6d6750188abd6b8db83527158bf689ee138c65167a36ede17c62013bdc1279b1",
+    "version": "1.2.0"
+  },
+  "required_objective_metrics": [
+    "asr_word_error_rate",
+    "speaker_embedding_similarity",
+    "invalid_output_rate",
+    "duration_seconds",
+    "sample_rate_hz",
+    "silence_fraction",
+    "clipping_fraction",
+    "real_time_factor",
+    "peak_memory_bytes"
+  ],
+  "sample_count": 45,
+  "samples": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/local-context/seed-42.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--local-context--seed-42",
+      "seed": 42,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/local-context/seed-314159.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--local-context--seed-314159",
+      "seed": 314159,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/local-context/seed-20260812.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--local-context--seed-20260812",
+      "seed": 20260812,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/names-numbers/seed-42.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--names-numbers--seed-42",
+      "seed": 42,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/names-numbers/seed-314159.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--names-numbers--seed-314159",
+      "seed": 314159,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/names-numbers/seed-20260812.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--names-numbers--seed-20260812",
+      "seed": 20260812,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/structured-long-form/seed-42.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--structured-long-form--seed-42",
+      "seed": 42,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/structured-long-form/seed-314159.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--structured-long-form--seed-314159",
+      "seed": 314159,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-reloaded-merged-pytorch",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-reloaded-merged-pytorch/structured-long-form/seed-20260812.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-reloaded-merged-pytorch--structured-long-form--seed-20260812",
+      "seed": 20260812,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/local-context/seed-42.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--local-context--seed-42",
+      "seed": 42,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/local-context/seed-314159.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--local-context--seed-314159",
+      "seed": 314159,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/local-context/seed-20260812.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--local-context--seed-20260812",
+      "seed": 20260812,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/names-numbers/seed-42.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--names-numbers--seed-42",
+      "seed": 42,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/names-numbers/seed-314159.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--names-numbers--seed-314159",
+      "seed": 314159,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/names-numbers/seed-20260812.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--names-numbers--seed-20260812",
+      "seed": 20260812,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/structured-long-form/seed-42.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--structured-long-form--seed-42",
+      "seed": 42,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/structured-long-form/seed-314159.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--structured-long-form--seed-314159",
+      "seed": 314159,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-a",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-a/structured-long-form/seed-20260812.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-a--structured-long-form--seed-20260812",
+      "seed": 20260812,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/local-context/seed-42.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--local-context--seed-42",
+      "seed": 42,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/local-context/seed-314159.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--local-context--seed-314159",
+      "seed": 314159,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/local-context/seed-20260812.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--local-context--seed-20260812",
+      "seed": 20260812,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/names-numbers/seed-42.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--names-numbers--seed-42",
+      "seed": 42,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/names-numbers/seed-314159.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--names-numbers--seed-314159",
+      "seed": 314159,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/names-numbers/seed-20260812.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--names-numbers--seed-20260812",
+      "seed": 20260812,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/structured-long-form/seed-42.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--structured-long-form--seed-42",
+      "seed": 42,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/structured-long-form/seed-314159.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--structured-long-form--seed-314159",
+      "seed": 314159,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/structured-long-form/seed-20260812.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--structured-long-form--seed-20260812",
+      "seed": 20260812,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/local-context/seed-42.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--local-context--seed-42",
+      "seed": 42,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/local-context/seed-314159.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--local-context--seed-314159",
+      "seed": 314159,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/local-context/seed-20260812.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--local-context--seed-20260812",
+      "seed": 20260812,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/names-numbers/seed-42.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--names-numbers--seed-42",
+      "seed": 42,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/names-numbers/seed-314159.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--names-numbers--seed-314159",
+      "seed": 314159,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/names-numbers/seed-20260812.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--names-numbers--seed-20260812",
+      "seed": 20260812,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/structured-long-form/seed-42.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--structured-long-form--seed-42",
+      "seed": 42,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/structured-long-form/seed-314159.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--structured-long-form--seed-314159",
+      "seed": 314159,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8/structured-long-form/seed-20260812.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded-top-p-0.8--structured-long-form--seed-20260812",
+      "seed": 20260812,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/local-context/seed-42.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--local-context--seed-42",
+      "seed": 42,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/local-context/seed-314159.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--local-context--seed-314159",
+      "seed": 314159,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "natural_local_context",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/local-context/seed-20260812.wav",
+      "lexical_anchors": [
+        {
+          "accepted_asr_forms": [
+            "paiseh",
+            "pai seh",
+            "pie say"
+          ],
+          "anchor_id": "paiseh",
+          "surface": "paiseh"
+        }
+      ],
+      "prompt_id": "local-context",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--local-context--seed-20260812",
+      "seed": 20260812,
+      "text": "I thought the meeting was at the office, but Marcus said everyone was already heading to Tanjong Pagar. I felt a bit paiseh, so I sent a message and took the next train."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/names-numbers/seed-42.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--names-numbers--seed-42",
+      "seed": 42,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/names-numbers/seed-314159.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--names-numbers--seed-314159",
+      "seed": 314159,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "pronunciation",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/names-numbers/seed-20260812.wav",
+      "prompt_id": "names-numbers",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--names-numbers--seed-20260812",
+      "seed": 20260812,
+      "text": "Please send the revised quotation to Sze Min at Block 18, Jalan Membina, by 4:30 p.m. on 12 August. The total is S$1,248.60, including GST."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/structured-long-form/seed-42.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--structured-long-form--seed-42",
+      "seed": 42,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/structured-long-form/seed-314159.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--structured-long-form--seed-314159",
+      "seed": 314159,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-b",
+      "category": "long_form_structure",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream-b/structured-long-form/seed-20260812.wav",
+      "prompt_id": "structured-long-form",
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream-b--structured-long-form--seed-20260812",
+      "seed": 20260812,
+      "text": "Before we decide, consider three questions. First, does the voice remain recognisable when the sentence becomes technical? Second, can it move between a short answer and a longer explanation without repeating the same rhythm? Third, what happens when the text includes parentheses, dates, and a list? The answer may differ by checkpoint. A lower validation loss can help us find candidates, but it cannot tell us whether a listener will find the voice natural after two minutes. That is why the final review uses the same text, hidden labels, and a separate reveal mapping."
+    }
+  ],
+  "schema_version": "1.1.0",
+  "seeds": [
+    42,
+    314159,
+    20260812
+  ],
+  "selected_prompt_ids": [
+    "local-context",
+    "names-numbers",
+    "structured-long-form"
+  ]
+}
