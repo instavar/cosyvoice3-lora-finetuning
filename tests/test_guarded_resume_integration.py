@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+import ast
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class GuardedResumeIntegrationTests(unittest.TestCase):
+    def test_cli_exposes_explicit_guarded_resume_controls(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        for flag in (
+            "--guarded-checkpoints",
+            "--resume-from",
+            "--trust-resume-state",
+            "--trust-model-checkpoint",
+            "--resume-keep-last",
+        ):
+            self.assertIn(flag, source)
+        self.assertIn("adapter-only warm start", source)
+
+    def test_resume_validates_before_adapter_and_runtime_loads(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        main = source[source.index("def main():") :]
+        validate = main.index("validate_checkpoint(")
+        adapter_load = main.index("peft_model = apply_lora_to_cosyvoice3")
+        runtime_load = main.index("restore_runtime_state(")
+        self.assertLess(validate, adapter_load)
+        self.assertLess(validate, runtime_load)
+
+    def test_runtime_state_covers_optimizer_scheduler_scaler_and_rng(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            '"optimizer": optimizer.state_dict()',
+            '"scheduler": scheduler.state_dict()',
+            '"scaler": scaler.state_dict()',
+            '"python_rng": random.getstate()',
+            '"numpy_rng": np.random.get_state()',
+            '"torch_rng": torch.get_rng_state()',
+            '"cuda_rng": torch.cuda.get_rng_state_all()',
+            'random.setstate(state["python_rng"])',
+            'np.random.set_state(state["numpy_rng"])',
+            'torch.set_rng_state(state["torch_rng"])',
+            'torch.cuda.set_rng_state_all(state["cuda_rng"])',
+        ):
+            self.assertIn(token, source)
+
+    def test_monitor_state_preserves_early_stop_history(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        for key in (
+            "best_cv_epoch",
+            "cv_metric",
+            "cv_no_improve_epochs",
+            "cv_overfit_flag",
+        ):
+            self.assertIn(f'"{key}"', source)
+        self.assertIn('info_dict.update(resume_state.get("monitor_state", {}))', source)
+
+    def test_epoch_checkpoint_occurs_after_early_stop_synchronization(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        sync = source.index("should_stop = synchronize_early_stop")
+        publish = source.index("published = publish_checkpoint(", sync)
+        branch = source.index("if should_stop:", publish)
+        self.assertLess(sync, publish)
+        self.assertLess(publish, branch)
+
+    def test_single_process_boundary_is_source_enforced(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('args.train_engine != "torch_ddp"', source)
+        self.assertIn("dist.get_world_size() != 1", source)
+        self.assertIn("args.num_workers != 0", source)
+        self.assertIn('"multi-rank state need a collective protocol"', source)
+
+    def test_guarded_inference_exports_cannot_overwrite(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("os.path.lexists(tag_dir)", source)
+        self.assertIn("Refusing to overwrite or adopt LoRA export", source)
+
+    def test_lifecycle_opts_in_only_for_supported_topology(self) -> None:
+        source = (ROOT / "scripts" / "instavar_voice_lifecycle.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            'os.environ["TRAIN_ENGINE"] == "torch_ddp" and settings["TRAIN_PROCESSES"] == "1"',
+            source,
+        )
+        self.assertIn('["--guarded-checkpoints", "--trust-model-checkpoint"]', source)
+        self.assertIn(
+            '["--resume-from", settings["RESUME_FROM"], "--trust-resume-state"]', source
+        )
+
+    def test_training_script_remains_valid_python(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        ast.parse(source)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -532,6 +532,8 @@ def _training_settings() -> dict[str, str]:
         "USE_AMP": os.environ.get("USE_AMP", "1"),
         "EARLY_STOP_ON_CV_OVERFIT": os.environ.get("EARLY_STOP_ON_CV_OVERFIT", "1"),
         "FP16": os.environ.get("FP16", "0"),
+        "RESUME_FROM": os.environ.get("RESUME_FROM", ""),
+        "TRUST_RESUME_STATE": os.environ.get("TRUST_RESUME_STATE", "0"),
     }
     for name in ("TRAIN_PROCESSES", "LORA_R", "LORA_ALPHA"):
         if not settings[name].isdigit() or int(settings[name]) < 1:
@@ -541,7 +543,7 @@ def _training_settings() -> dict[str, str]:
         raise ValueError("LORA_DROPOUT must be in [0, 1)")
     if not settings["LORA_TARGET_MODULES"].strip():
         raise ValueError("LORA_TARGET_MODULES must not be empty")
-    for name in ("USE_AMP", "EARLY_STOP_ON_CV_OVERFIT", "FP16"):
+    for name in ("USE_AMP", "EARLY_STOP_ON_CV_OVERFIT", "FP16", "TRUST_RESUME_STATE"):
         if settings[name] not in {"0", "1"}:
             raise ValueError(f"{name} must equal 0 or 1")
     return settings
@@ -575,6 +577,15 @@ def _preflight() -> None:
         raise ValueError("TRAIN_ENGINE must be torch_ddp or deepspeed")
     if engine == "deepspeed":
         _path("DEEPSPEED_CONFIG")
+    settings = _training_settings()
+    if settings["RESUME_FROM"] and (
+        engine != "torch_ddp"
+        or settings["TRAIN_PROCESSES"] != "1"
+        or settings["TRUST_RESUME_STATE"] != "1"
+    ):
+        raise ValueError(
+            "RESUME_FROM requires single-process torch_ddp and TRUST_RESUME_STATE=1"
+        )
     config = _path("TRAIN_CONFIG")
     source_max_epoch = _configured_max_epoch(config)
     effective_max_epoch = int(os.environ["MAX_EPOCH"])
@@ -639,7 +650,7 @@ def _preflight() -> None:
             "source_config_max_epoch": source_max_epoch,
             "effective_max_epoch": effective_max_epoch,
             "learning_rate": learning_rate,
-            "training_settings": _training_settings(),
+            "training_settings": settings,
             "deepspeed_config_sha256": deepspeed_config_sha256,
             "selected_adapter_name": _safe_name(os.environ["SELECTED_ADAPTER_NAME"]),
             "training_config_sha256": _sha256(config),
@@ -705,6 +716,12 @@ def _train() -> None:
         command.append("--use_amp")
     if settings["EARLY_STOP_ON_CV_OVERFIT"] == "1":
         command.append("--early-stop-on-cv-overfit")
+    if os.environ["TRAIN_ENGINE"] == "torch_ddp" and settings["TRAIN_PROCESSES"] == "1":
+        command.extend(["--guarded-checkpoints", "--trust-model-checkpoint"])
+        if settings["RESUME_FROM"]:
+            command.extend(
+                ["--resume-from", settings["RESUME_FROM"], "--trust-resume-state"]
+            )
     _run(command, cwd=cosyvoice, environment=_python_environment(cosyvoice))
     selected = output / _safe_name(os.environ["SELECTED_ADAPTER_NAME"])
     staged = work / "train" / "selected-adapter"
