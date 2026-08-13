@@ -129,6 +129,17 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         self.assertIn('if args.inference_mode != "base"', source)
         self.assertIn('"artifact_mode": artifact_mode', source)
         self.assertIn('f"cosyvoice3_pytorch_{device_family}_{artifact_mode}"', source)
+        self.assertIn("BackgroundThreadFailureCapture", source)
+        self.assertIn('"background_thread_failures"', source)
+        self.assertIn('"background_thread_exception"', source)
+
+    def test_inference_helper_fails_after_preserving_background_failure_audio(self) -> None:
+        source = (ROOT / "tools" / "infer_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        ast.parse(source)
+        self.assertIn("BackgroundThreadFailureCapture", source)
+        self.assertIn("preserved invalid output", source)
 
 
 if __name__ == "__main__":

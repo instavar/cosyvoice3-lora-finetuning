@@ -20,6 +20,7 @@ except ImportError as exc:  # pragma: no cover
 
 from cosyvoice.cli.cosyvoice import CosyVoice3
 from cosyvoice_generation import invoke_generation, validate_generation_inputs
+from thread_failures import BackgroundThreadFailureCapture
 
 DEFAULT_PROMPT_WAV = ""
 DEFAULT_PROMPT_TEXT = ""
@@ -253,18 +254,19 @@ def main() -> None:
 
     for idx, text in enumerate(texts, start=1):
         chunks = []
-        output_stream, route, _ = invoke_generation(
-            cosyvoice,
-            text=text,
-            instruction=args.instruction,
-            prompt_text=args.prompt_text,
-            prompt_wav=str(prompt_wav),
-            speed=args.speed,
-            text_frontend=args.text_frontend,
-        )
-        logging.info("Generation route: %s", route)
-        for model_output in output_stream:
-            chunks.append(model_output["tts_speech"].cpu())
+        with BackgroundThreadFailureCapture() as background_capture:
+            output_stream, route, _ = invoke_generation(
+                cosyvoice,
+                text=text,
+                instruction=args.instruction,
+                prompt_text=args.prompt_text,
+                prompt_wav=str(prompt_wav),
+                speed=args.speed,
+                text_frontend=args.text_frontend,
+            )
+            logging.info("Generation route: %s", route)
+            for model_output in output_stream:
+                chunks.append(model_output["tts_speech"].cpu())
         if not chunks:
             raise RuntimeError(f"No audio generated for text: {text}")
         speech = torch.cat(chunks, dim=1).to(torch.float32)
@@ -275,6 +277,11 @@ def main() -> None:
             out_path = out_dir / f"sample_{idx:02d}.wav"
         torchaudio.save(str(out_path), speech, cosyvoice.sample_rate)
         logging.info("Saved %s", out_path)
+        if background_capture.failures:
+            raise RuntimeError(
+                "Uncaught background-thread failure during generation; "
+                f"preserved invalid output at {out_path}"
+            )
 
 
 if __name__ == "__main__":

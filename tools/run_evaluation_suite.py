@@ -13,6 +13,7 @@ from pathlib import Path
 
 import torch
 import torchaudio
+from thread_failures import BackgroundThreadFailureCapture
 
 IDENTIFIER_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 
@@ -180,28 +181,30 @@ def main() -> int:
             "instruction_requested": bool(row.get("instruction")),
             "instruction_route": planned_instruction_route,
             "instruction_applied": False,
+            "background_thread_check": "threading_excepthook_during_stream_consumption",
         }
+        background_capture = BackgroundThreadFailureCapture()
         try:
-            output_stream, instruction_route, applied_instruction = invoke_generation(
-                cosyvoice,
-                text=row["text"],
-                instruction=row.get("instruction"),
-                prompt_text=args.prompt_text,
-                prompt_wav=args.prompt_wav,
-                speed=args.speed,
-                text_frontend=args.text_frontend,
-            )
-            observation.update(
-                {
-                    "instruction_route": instruction_route,
-                    "applied_instruction": applied_instruction,
-                    "instruction_applied": applied_instruction is not None,
-                }
-            )
-            chunks = [
-                value["tts_speech"].cpu()
-                for value in output_stream
-            ]
+            with background_capture:
+                output_stream, instruction_route, applied_instruction = invoke_generation(
+                    cosyvoice,
+                    text=row["text"],
+                    instruction=row.get("instruction"),
+                    prompt_text=args.prompt_text,
+                    prompt_wav=args.prompt_wav,
+                    speed=args.speed,
+                    text_frontend=args.text_frontend,
+                )
+                observation.update(
+                    {
+                        "instruction_route": instruction_route,
+                        "applied_instruction": applied_instruction,
+                        "instruction_applied": applied_instruction is not None,
+                    }
+                )
+                chunks = [value["tts_speech"].cpu() for value in output_stream]
+            if background_capture.failures:
+                observation["background_thread_failures"] = background_capture.failures
             if not chunks:
                 raise RuntimeError("No audio generated")
             speech = torch.cat(chunks, dim=1).to(torch.float32)
@@ -212,7 +215,12 @@ def main() -> int:
             duration = float(speech.shape[-1] / cosyvoice.sample_rate)
             peak = float(speech.abs().max().item())
             rms = float(torch.sqrt(torch.mean(torch.square(speech))).item())
-            valid = duration >= args.min_audio_seconds and peak > 1e-4 and rms > 1e-5
+            valid = (
+                not background_capture.failures
+                and duration >= args.min_audio_seconds
+                and peak > 1e-4
+                and rms > 1e-5
+            )
             observation.update(
                 {
                     "valid": valid,
@@ -235,18 +243,27 @@ def main() -> int:
                 }
             )
             if not valid:
+                background_failure = bool(background_capture.failures)
                 observation.update(
                     {
-                        "error_type": "implausible_audio_output",
+                        "error_type": (
+                            "background_thread_exception"
+                            if background_failure
+                            else "implausible_audio_output"
+                        ),
                         "error": (
-                            "CosyVoice can hide a background LLM exception behind a short WAV; "
-                            "the output failed duration or signal-level validity checks."
+                            "An uncaught background-thread exception occurred during stream consumption; "
+                            "the preserved WAV is invalid evidence."
+                            if background_failure
+                            else "The output failed duration or signal-level validity checks."
                         ),
                     }
                 )
         except Exception as error:
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
+            if background_capture.failures:
+                observation["background_thread_failures"] = background_capture.failures
             observation.update(
                 {
                     "generation_seconds": time.perf_counter() - started,

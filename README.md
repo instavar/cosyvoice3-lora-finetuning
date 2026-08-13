@@ -355,10 +355,15 @@ matched Base-versus-adapter pair a same-conditioning adaptation comparison. It
 does not by itself prove loader honesty, numerical determinism, perceptual
 benefit, or speaker identity.
 
-The runner also rejects implausibly short or silent output. CosyVoice can raise
-inside its background LLM thread while the parent call still returns a roughly
-0.04-second WAV, so process exit and non-empty audio are not sufficient runtime
-evidence.
+The runner also rejects implausibly short or silent output. It installs a
+bounded `threading.excepthook` capture while each output stream is consumed and
+records any uncaught worker failure as structured invalid evidence, even if a
+non-empty WAV was produced. CosyVoice can raise inside its background LLM
+thread while the parent call still returns a roughly 0.04-second WAV, so process
+exit and non-empty audio are not sufficient runtime evidence. The standalone
+inference helper uses the same capture and exits nonzero after preserving the
+invalid WAV for diagnosis. See
+[`reports/background-thread-failure-capture-validation-2026-08-13.md`](reports/background-thread-failure-capture-validation-2026-08-13.md).
 
 The runner dispatches each row according to its frozen control contract. Rows
 without an `instruction` use `inference_zero_shot`. Rows with an instruction
@@ -523,10 +528,11 @@ python tools/infer_cosyvoice3_lora.py \
 
 Do not use process exit status alone as the success criterion. CosyVoice can
 raise an exception in its background LLM thread while the parent process still
-writes a very short WAV and exits successfully. Check the log for thread
-exceptions, then validate sample rate, duration, frame count, and non-trivial
-audio level. The verified vLLM sample had 169,920 frames, peak amplitude 0.798,
-and RMS 0.124.
+writes a very short WAV. The helper now converts a worker failure observed
+during stream consumption into a nonzero parent exit after preserving the WAV,
+but logs remain required for failures outside that bounded scope. Then validate
+sample rate, duration, frame count, and non-trivial audio level. The verified
+vLLM sample had 169,920 frames, peak amplitude 0.798, and RMS 0.124.
 
 ## Diagnosis: why the first run failed
 
