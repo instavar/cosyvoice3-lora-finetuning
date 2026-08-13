@@ -437,8 +437,10 @@ top-p 1.0 default with no per-request seed. `request-seeded` adds only the
 frozen plan-row seed. `request-seeded-top-p-0.8` adds top-p 0.8 after the seed,
 matching the corresponding PyTorch nucleus threshold. Every vLLM observation
 records the selected profile, row-scoped request ordinals, the runtime-applied
-sampling state, request limits, runtime-selected or supplied seed, output token
-count, and an output-token hash. The receipt retains no token content.
+input-batch sampling state, request limits, request-local generator seed when
+one exists, output token count, and an output-token hash. An upstream request
+has no request-local generator and uses the process-global generator. The
+receipt retains no token content or global generator state.
 
 These profiles are diagnostic controls, not an equivalence shim. PyTorch still
 uses CosyVoice repetition-aware sampling, which vLLM's native request sampler
@@ -446,9 +448,9 @@ does not reproduce. Compare `upstream` to `request-seeded`, then compare
 `request-seeded` to `request-seeded-top-p-0.8`, so each transition changes one
 declared variable. Exact output hashes remain required because a request seed
 does not prove deterministic runtime execution. The wrapper is process-local
-and briefly replaces vLLM's request constructor and sampling-state registration
+and briefly replaces vLLM's request constructor and input-batch registration
 hook while a serial request starts. Receipt capture is pinned to vLLM 0.15.1
-and fails closed on version drift or a missing sampling-state observation. It is
+and fails closed on version drift or a missing input-batch observation. It is
 intended for these serial diagnostic runners, not a concurrent server.
 
 The preregistered multi-prompt result is documented in
@@ -458,10 +460,19 @@ prompt and seed pairs. Adding a request seed changed only the three structured
 long-form rows, while adding top-p 0.8 changed every row and produced one
 near-silent invalid output. Every evaluable row still failed requested-text
 WER. The result supports bounded request-profile diagnosis, not quality or
-runtime-equivalence promotion. Request-level receipts now remove the prior
-instrumentation gap, but the published study predates them. Text length and
-frontend request count therefore remain confounded in that result until a new
-split-boundary experiment is run with the receipt-capable runner.
+runtime-equivalence promotion. The published study predates request-level
+receipts. Text length and frontend request count therefore remain confounded in
+that result until the corrected instrumentation passes a new smoke and is used
+in a split-boundary experiment.
+
+The first preregistered receipt smoke is documented in
+[`reports/vllm-request-receipt-smoke-2026-08-14.md`](reports/vllm-request-receipt-smoke-2026-08-14.md).
+It failed closed because a similarly named sampling-state API existed in the
+installation but was not on the live engine path. The retained failure moved
+capture to the live `GPUInputBatch` path and corrected the upstream seed model:
+unseeded requests use the process-global generator, not a newly selected
+request seed. A new smoke remains required before the receipts support a larger
+experiment.
 
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.

@@ -21,7 +21,7 @@ VLLM_SAMPLING_PROFILES = (
 REQUEST_RECEIPT_SCHEMA_VERSION = "1.0.0"
 REQUEST_RECEIPT_VLLM_VERSION = "0.15.1"
 SAMPLING_STATE_CAPTURE = (
-    "vllm.v1.worker.gpu.sample.states.SamplingStates.add_request"
+    "vllm.v1.worker.gpu_input_batch.InputBatch.add_request"
 )
 
 
@@ -87,6 +87,13 @@ def _validate_seed(seed: int) -> int:
     return seed
 
 
+def _engine_config_seed(llm: Any) -> int | None:
+    vllm_config = getattr(getattr(llm, "vllm", None), "vllm_config", None)
+    model_config = getattr(vllm_config, "model_config", None)
+    seed = getattr(model_config, "seed", None)
+    return int(seed) if isinstance(seed, int) and not isinstance(seed, bool) else None
+
+
 def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingControl:
     """Wrap one CosyVoice vLLM instance without permanently patching vLLM."""
     if profile not in VLLM_SAMPLING_PROFILES:
@@ -110,7 +117,7 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
     ) -> Iterator[Any]:
         overrides = control.overrides()
         import vllm
-        from vllm.v1.worker.gpu.sample.states import SamplingStates
+        from vllm.v1.worker.gpu_input_batch import InputBatch
 
         vllm_version = getattr(vllm, "__version__", None)
         if vllm_version != REQUEST_RECEIPT_VLLM_VERSION:
@@ -120,7 +127,7 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
             )
 
         original_sampling_params = vllm.SamplingParams
-        original_add_request = SamplingStates.add_request
+        original_add_request = InputBatch.add_request
         applied_parameters: list[dict[str, Any]] = []
         token_digest = hashlib.sha256()
         token_count = 0
@@ -144,33 +151,42 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
                 kwargs[key] = value
             return original_sampling_params(*args, **kwargs)
 
-        def controlled_add_request(
-            states: Any,
-            req_idx: int,
-            sampling_params: Any,
-        ) -> None:
-            original_add_request(states, req_idx, sampling_params)
+        def controlled_add_request(input_batch: Any, request: Any) -> int:
+            req_idx = original_add_request(input_batch, request)
+            sampling_params = request.sampling_params
+            if sampling_params is None:
+                raise RuntimeError("vLLM request has no sampling parameters")
+            generator = input_batch.generators.get(req_idx)
+            request_seed = (
+                int(generator.initial_seed()) if generator is not None else None
+            )
             applied_parameters.append(
                 {
-                    "temperature": float(states.temperature.np[req_idx]),
-                    "top_p": float(states.top_p.np[req_idx]),
-                    "top_k": int(states.top_k.np[req_idx]),
-                    "min_p": float(states.min_p.np[req_idx]),
-                    "runtime_seed": int(states.seeds.np[req_idx]),
+                    "temperature": float(input_batch.temperature_cpu[req_idx]),
+                    "top_p": float(input_batch.top_p_cpu[req_idx]),
+                    "top_k": int(input_batch.top_k_cpu[req_idx]),
+                    "request_generator_seed": request_seed,
                     "seed_source": (
                         "supplied_request_seed"
-                        if sampling_params.seed is not None
-                        else "vllm_runtime_generated"
+                        if generator is not None
+                        else "global_engine_generator"
                     ),
-                    "supplied_request_seed": (
-                        int(sampling_params.seed)
-                        if sampling_params.seed is not None
-                        else None
-                    ),
-                    "min_tokens": int(sampling_params.min_tokens),
-                    "max_tokens": int(sampling_params.max_tokens),
+                    "engine_config_seed": _engine_config_seed(llm),
+                    "request_generator_state_captured": generator is not None,
+                    "request_id_matches_wrapper": request.req_id == uuid,
                 }
             )
+            receipt["registered_request_parameters"] = {
+                "min_p": float(sampling_params.min_p),
+                "min_tokens": int(sampling_params.min_tokens),
+                "max_tokens": int(sampling_params.max_tokens),
+                "supplied_request_seed": (
+                    int(sampling_params.seed)
+                    if sampling_params.seed is not None
+                    else None
+                ),
+            }
+            return req_idx
 
         def record_token(token: Any) -> None:
             nonlocal token_count
@@ -181,7 +197,7 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
             token_count += 1
 
         vllm.SamplingParams = controlled_sampling_params
-        SamplingStates.add_request = controlled_add_request
+        InputBatch.add_request = controlled_add_request
         stream = original_wrapper(lm_input, sampling, min_len, max_len, uuid)
         first: Any | None = None
         has_first = False
@@ -196,13 +212,13 @@ def install_vllm_sampling_control(cosyvoice: Any, profile: str) -> VllmSamplingC
                 startup_error = error
         finally:
             vllm.SamplingParams = original_sampling_params
-            SamplingStates.add_request = original_add_request
+            InputBatch.add_request = original_add_request
         try:
             if startup_error is not None:
                 raise startup_error
             if len(applied_parameters) != 1:
                 raise RuntimeError(
-                    "expected exactly one vLLM sampling-state capture per request, "
+                    "expected exactly one vLLM input-batch capture per request, "
                     f"observed {len(applied_parameters)}"
                 )
             receipt["applied_sampling"] = applied_parameters[0]
@@ -264,11 +280,13 @@ def vllm_sampling_evidence(cosyvoice: Any, top_k: int = 25) -> dict[str, Any]:
         "request_count": len(control.request_receipts),
         "requests": copy.deepcopy(control.request_receipts),
         "evidence_boundary": (
-            "Applied sampling fields are read from vLLM SamplingStates after "
-            "request registration under the pinned vLLM version. Request limits "
-            "are read from the registered SamplingParams, and token hashes cover "
-            "the token IDs yielded by the CosyVoice wrapper without retaining "
-            "token content. "
+            "Applied temperature, top-p, top-k, and request generator state are "
+            "read from vLLM's persistent GPU input batch after request "
+            "registration under the pinned version. Request limits and min-p "
+            "are read from the registered SamplingParams. An upstream request "
+            "without its own generator uses vLLM's process-global generator. "
+            "Token hashes cover the token IDs yielded by the CosyVoice wrapper "
+            "without retaining token content. "
             "They do not reproduce CosyVoice PyTorch repetition-aware sampling, "
             "attest kernel behavior, prove deterministic output, or establish "
             "content or perceptual quality."

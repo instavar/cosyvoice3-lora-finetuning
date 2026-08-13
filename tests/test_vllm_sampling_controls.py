@@ -30,41 +30,55 @@ class FakeSamplingParams:
         self.max_tokens = kwargs.get("max_tokens", 16)
 
 
-class FakeSamplingStates:
+class FakeGenerator:
+    def __init__(self, seed):
+        self.seed = seed
+
+    def initial_seed(self):
+        return self.seed
+
+
+class FakeInputBatch:
     def __init__(self):
         self.vocab_size = 4096
-        self.temperature = types.SimpleNamespace(np=[0.0])
-        self.top_p = types.SimpleNamespace(np=[0.0])
-        self.top_k = types.SimpleNamespace(np=[0])
-        self.min_p = types.SimpleNamespace(np=[0.0])
-        self.seeds = types.SimpleNamespace(np=[0])
+        self.temperature_cpu = [0.0]
+        self.top_p_cpu = [0.0]
+        self.top_k_cpu = [0]
+        self.generators = {}
 
-    def add_request(self, req_idx, sampling_params):
-        self.temperature.np[req_idx] = sampling_params.temperature
-        self.top_p.np[req_idx] = sampling_params.top_p
-        self.top_k.np[req_idx] = sampling_params.top_k
-        self.min_p.np[req_idx] = sampling_params.min_p
-        self.seeds.np[req_idx] = (
-            sampling_params.seed if sampling_params.seed is not None else -777
-        )
+    def add_request(self, request):
+        req_idx = 0
+        sampling_params = request.sampling_params
+        self.temperature_cpu[req_idx] = sampling_params.temperature
+        self.top_p_cpu[req_idx] = sampling_params.top_p
+        self.top_k_cpu[req_idx] = sampling_params.top_k
+        if sampling_params.seed is not None:
+            self.generators[req_idx] = FakeGenerator(sampling_params.seed)
+        return req_idx
 
 
 class FakeLlm:
     def __init__(self):
-        self.vllm = object()
+        self.vllm = types.SimpleNamespace(
+            vllm_config=types.SimpleNamespace(
+                model_config=types.SimpleNamespace(seed=0)
+            )
+        )
         self.captured = None
 
     def inference_wrapper(self, lm_input, sampling, min_len, max_len, uuid):
         from vllm import SamplingParams
-        from vllm.v1.worker.gpu.sample.states import SamplingStates
+        from vllm.v1.worker.gpu_input_batch import InputBatch
 
         self.captured = SamplingParams(
             top_k=sampling,
             min_tokens=min_len,
             max_tokens=max_len,
         )
-        self.states = SamplingStates()
-        self.states.add_request(0, self.captured)
+        self.input_batch = InputBatch()
+        self.input_batch.add_request(
+            types.SimpleNamespace(req_id=uuid, sampling_params=self.captured)
+        )
         yield 7
         yield 8
 
@@ -97,9 +111,7 @@ class VllmSamplingControlTests(unittest.TestCase):
             "vllm",
             "vllm.v1",
             "vllm.v1.worker",
-            "vllm.v1.worker.gpu",
-            "vllm.v1.worker.gpu.sample",
-            "vllm.v1.worker.gpu.sample.states",
+            "vllm.v1.worker.gpu_input_batch",
         )
         self.previous_modules = {
             name: sys.modules.get(name) for name in self.module_names
@@ -108,9 +120,7 @@ class VllmSamplingControlTests(unittest.TestCase):
             sys.modules[name] = types.ModuleType(name)
         sys.modules["vllm"].__version__ = "0.15.1"
         sys.modules["vllm"].SamplingParams = FakeSamplingParams
-        sys.modules["vllm.v1.worker.gpu.sample.states"].SamplingStates = (
-            FakeSamplingStates
-        )
+        sys.modules["vllm.v1.worker.gpu_input_batch"].InputBatch = FakeInputBatch
 
     def tearDown(self) -> None:
         for name, previous in self.previous_modules.items():
@@ -135,20 +145,30 @@ class VllmSamplingControlTests(unittest.TestCase):
         request = vllm_sampling_evidence(cosyvoice)["requests"][0]
         self.assertEqual(request["schema_version"], "1.0.0")
         self.assertEqual(request["vllm_version"], "0.15.1")
-        self.assertEqual(request["applied_sampling"]["runtime_seed"], -777)
-        self.assertEqual(request["applied_sampling"]["seed_source"], "vllm_runtime_generated")
+        self.assertIsNone(request["applied_sampling"]["request_generator_seed"])
+        self.assertEqual(
+            request["applied_sampling"]["seed_source"],
+            "global_engine_generator",
+        )
+        self.assertEqual(request["applied_sampling"]["engine_config_seed"], 0)
+        self.assertFalse(
+            request["applied_sampling"]["request_generator_state_captured"]
+        )
+        self.assertIsNone(
+            request["registered_request_parameters"]["supplied_request_seed"]
+        )
 
     def test_request_seed_is_injected_and_patch_is_restored(self) -> None:
         cosyvoice = FakeCosyVoice()
         module = sys.modules["vllm"]
         original = module.SamplingParams
-        original_add_request = FakeSamplingStates.add_request
+        original_add_request = FakeInputBatch.add_request
         install_vllm_sampling_control(cosyvoice, "request-seeded")
         begin_vllm_observation(cosyvoice, "sample-2", 314159)
         stream = cosyvoice.model.llm.inference_wrapper(None, 25, 2, 20, "x")
         self.assertEqual(next(stream), 7)
         self.assertIs(module.SamplingParams, original)
-        self.assertIs(FakeSamplingStates.add_request, original_add_request)
+        self.assertIs(FakeInputBatch.add_request, original_add_request)
         self.assertEqual(list(stream), [8])
         self.assertEqual(cosyvoice.model.llm.captured.kwargs["seed"], 314159)
         evidence = vllm_sampling_evidence(cosyvoice)
@@ -159,6 +179,13 @@ class VllmSamplingControlTests(unittest.TestCase):
         self.assertEqual(request["output_token_count"], 2)
         self.assertEqual(request["output_token_sha256"], expected_hash)
         self.assertNotIn("token_ids", request)
+        self.assertEqual(
+            request["applied_sampling"]["request_generator_seed"],
+            314159,
+        )
+        self.assertTrue(
+            request["applied_sampling"]["request_generator_state_captured"]
+        )
 
     def test_seeded_top_p_profile_changes_one_additional_parameter(self) -> None:
         cosyvoice = FakeCosyVoice()
@@ -204,11 +231,14 @@ class VllmSamplingControlTests(unittest.TestCase):
             [1, 2],
         )
         self.assertEqual(
-            [request["applied_sampling"]["runtime_seed"] for request in evidence["requests"]],
+            [
+                request["applied_sampling"]["request_generator_seed"]
+                for request in evidence["requests"]
+            ],
             [42, 42],
         )
 
-    def test_missing_sampling_state_capture_fails_closed_with_receipt(self) -> None:
+    def test_missing_input_batch_capture_fails_closed_with_receipt(self) -> None:
         cosyvoice = FakeNoStateCosyVoice()
         install_vllm_sampling_control(cosyvoice, "upstream")
         begin_vllm_observation(cosyvoice, "sample-no-state", 42)

@@ -344,7 +344,12 @@
         {
           "level": "repository_declared",
           "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
-          "claim": "The serial diagnostic runner records vLLM 0.15.1 request ordinals, runtime-applied sampling state, seeds, output token counts, and token hashes without retaining token content, and fails closed when the internal capture contract drifts."
+          "claim": "The serial diagnostic runner is designed to record vLLM 0.15.1 request ordinals, input-batch sampling state, request-local generator seeds when present, output token counts, and token hashes without retaining token content. Its internal capture contract fails closed and requires a new live smoke after correction."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/vllm-request-receipt-smoke-2026-08-14.md",
+          "claim": "The first two-row receipt smoke retained complete but universally invalid coverage because the proposed sampling-state hook was not on the live engine path. Inspection localized request registration to GPUInputBatch and showed that unseeded requests use the process-global generator."
         }
       ]
     },
@@ -404,7 +409,7 @@
       "blockers": [
         "The corrected emotion-route blind listening ratings are incomplete.",
         "The 45-file sampling-profile blind pack remains unrated and cannot override universal content failure.",
-        "The published sampling-profile study predates request-level receipts, so text length and frontend request count remain confounded until a new split-boundary experiment uses the receipt-capable runner."
+        "The published sampling-profile study predates request-level receipts, and the first receipt smoke falsified its hook. Text length and frontend request count remain confounded until corrected instrumentation passes a new smoke and split-boundary experiment."
       ]
     }
   },
@@ -422,6 +427,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. The runner now records request-level receipts; run a preregistered split-boundary follow-up before attributing the effect to request count."
+    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. The first receipt smoke falsified its internal hook and moved capture to the live GPUInputBatch path. Pass a newly preregistered receipt smoke before running a split-boundary follow-up or attributing the effect to request count."
   ]
 }
