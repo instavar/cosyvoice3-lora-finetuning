@@ -272,6 +272,10 @@ new audio, or listening test ran for this implementation.
 
 ### Review legacy DeepSpeed pruning before deletion
 
+Implementation `dceab3d901bf8bb395945ca43b1fa2685925cd73` passed the hosted
+Instavar Voice contract in run `31662101911` on 2026-08-13. The destructive
+paths were exercised only against temporary test fixtures.
+
 Legacy DeepSpeed checkpoints do not carry the guarded continuation sidecars, so
 their numeric names and YAML metadata are not deletion authority. The pruner
 therefore has no discovery-and-delete mode. First stop every writer, explicitly
