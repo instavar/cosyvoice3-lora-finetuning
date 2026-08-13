@@ -3,7 +3,7 @@
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
-    "evidence_revision": "314d3eb75ec6d6be4897e899e365a681d1bcfbdd"
+    "evidence_revision": "c9daeee3f0563b6fa1eb1d37037cc62c80469bc6"
   },
   "model": {
     "family": "CosyVoice3",
@@ -95,7 +95,7 @@
             {
               "level": "negative_result",
               "ref": "reports/matched-long-form-base-adapter-2026-08-13.md",
-              "claim": "The complete nine-metric contract passed, but requested-text ASR exposed repetitions, omissions, garbling, and reference-derived content."
+              "claim": "The complete nine-metric contract passed, but requested-text ASR exposed high WER and repetition for both candidates; the post-hoc exact overlap diagnostic additionally flagged Base, not epoch 12."
             }
           ],
           "boundary": "The suite detects runtime failure but the historical rows cannot support emotion-obedience claims; the corrected dispatch remains repository-declared until a real rerun."
@@ -277,7 +277,7 @@
   },
   "known_gaps": [
     "Perceptual ranking of the selected checkpoint remains pending.",
-    "The first explicit same-conditioning long-form run produced semantically corrupted content for both Base and epoch 12; add requested-text repetition and retained-reference leakage diagnostics and replicate across frozen seeds.",
+    "The first explicit same-conditioning long-form run produced semantically corrupted content for both Base and epoch 12. The post-hoc evaluator 0.37 diagnostics flagged high WER and repetition for both, plus exact retained-reference overlap for Base only; preregister the thresholds and replicate across frozen seeds.",
     "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
     "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
