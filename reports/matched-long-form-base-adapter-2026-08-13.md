@@ -109,6 +109,13 @@ proving that epoch 12 is free from shorter, paraphrased, or ASR-hidden leakage.
 - hosted evaluator 0.37.0 main workflow:
   `31671694637`, passed at `2026-08-13T05:50:38Z`
 
+Evaluator 0.38.0 later aligned WER with the diagnostic's NFKC token
+normalization and added fail-closed text and edit-distance work limits. It does
+not change the retained 0.37 report or make its thresholds preregistered. The
+companion contract pins public evaluator revision
+`286f7e7052740d6fec9a5a4b5c27a0419ed310fd`; hosted evaluator workflow
+`31672653152` passed.
+
 ## Interpretation and limits
 
 The result generalizes only to this Base checkpoint, epoch-12 adapter, retained
