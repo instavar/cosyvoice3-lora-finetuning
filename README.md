@@ -209,6 +209,67 @@ do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
 
+### Guarded epoch-boundary continuation
+
+Implementation `eeae90e4e2435fa6a22693ddcc877ccf76febb77` adds exact guarded
+continuation for one `torch_ddp` process with `--num_workers 0`. The executable
+lifecycle opts into this path automatically for that topology. Direct runs start
+with both acknowledgments and a fresh `--model_dir`:
+
+```bash
+torchrun --standalone --nnodes=1 --nproc_per_node=1 \
+  tools/train_cosyvoice3_lora.py \
+  --train_engine torch_ddp \
+  --model llm \
+  --config examples/libritts/cosyvoice3/conf/cosyvoice3.yaml \
+  --train_data data/train.data.list \
+  --cv_data data/dev.data.list \
+  --qwen_pretrain_path pretrained_models/Fun-CosyVoice3-0.5B/CosyVoice-BlankEN \
+  --checkpoint pretrained_models/Fun-CosyVoice3-0.5B/llm.pt \
+  --model_dir exp/your_run/lora \
+  --max_epoch 20 \
+  --learning_rate 1e-5 \
+  --guarded-checkpoints \
+  --trust-model-checkpoint
+```
+
+Resume from the exact newest guarded directory, not from an inference-only
+`epoch_N_whole` adapter:
+
+```bash
+# Add these flags to the same command and keep every other bound input unchanged.
+--resume-from exp/your_run/lora/resume_epoch_000011 \
+--trust-resume-state
+```
+
+`--lora-checkpoint` remains an adapter-only warm start. It does not restore an
+optimizer trajectory and cannot be combined with guarded continuation. The
+guarded package binds the base `llm.pt`, effective post-HyperPyYAML controls,
+train and CV lists plus every referenced prepared artifact, Qwen dependency
+tree, companion and patched upstream training sources, Python and package
+runtime, CUDA topology, output path, filesystem device, and directory inode.
+Each atomic `resume_epoch_NNNNNN` contains adapter bytes, optimizer, scheduler,
+AMP scaler when enabled, Python, NumPy, Torch, and CUDA RNG state, completed
+epoch and step, plus CV early-stop history.
+
+The selected directory must be the newest owned guarded checkpoint. Changed
+bytes, changed inputs, terminal symlinks, unowned numeric siblings, a completed
+`max_epoch`, or an already-triggered early-stop target fail before adapter or
+runtime state is loaded. A nonblocking output lock prevents cooperative writers.
+Both guarded continuation directories and ordinary inference adapter exports
+refuse overwrite or adoption. Retention removes only direct-child guarded
+checkpoints whose sidecars and bytes match the current contract.
+
+DeepSpeed and multi-rank training remain available for fresh runs. Guarded
+continuation deliberately rejects them because a correct contract needs
+per-rank model partitions, optimizer state, scaler and RNG state, sampler
+position, failure agreement, and collective publication. Data-loader workers
+are also rejected because worker RNG and iterator state are not persisted.
+
+This is repository-declared and dependency-free evidence. No real CosyVoice
+model, GPU, optimizer, interrupted process, numerical continuation comparison,
+new audio, or listening test ran for this implementation.
+
 Set `PERSISTED_PACKAGE_ROOT` to an existing directory outside the work and
 source checkouts, pretrained and Qwen dependency directories, both prepared
 data trees, and the base LLM checkpoint directory. Preflight verifies fsynced

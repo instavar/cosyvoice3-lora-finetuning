@@ -3,7 +3,7 @@
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
-    "evidence_revision": "ced7619b4c46465fddf34644380337912f4e551a"
+    "evidence_revision": "eeae90e4e2435fa6a22693ddcc877ccf76febb77"
   },
   "model": {
     "family": "CosyVoice3",
@@ -43,9 +43,14 @@
               "level": "validated",
               "ref": "README.md#lora-run-results",
               "claim": "The selected LoRA checkpoint was preserved."
+            },
+            {
+              "level": "repository_declared",
+              "ref": "README.md#guarded-epoch-boundary-continuation",
+              "claim": "New single-process torch_ddp runs can publish content-bound epoch continuation packages with optimizer, scheduler, scaler, RNG, progress, and CV monitor state."
             }
           ],
-          "boundary": "Checkpoint preservation does not establish merged-runtime equivalence."
+          "boundary": "Historical checkpoint preservation does not validate the new resume contract or establish merged-runtime equivalence."
         },
         "fresh_process_reload": {
           "status": "validated",
@@ -233,6 +238,8 @@
     "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
     "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
+    "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
+    "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
     "PyTorch and merged-vLLM output equivalence has not been assessed with the frozen listening suite."
   ]
