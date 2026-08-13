@@ -421,6 +421,15 @@ content gate. This localizes the observed drift to a layer after the in-memory
 merge for this slice, but export serialization and vLLM decoding remain
 confounded.
 
+The preregistered four-way follow-up is documented in
+[`reports/matched-runtime-four-way-2026-08-13.md`](reports/matched-runtime-four-way-2026-08-13.md).
+A persisted safetensors model loaded into a fresh PyTorch process reproduced
+the adapter and in-memory merged WAVs byte for byte for all three seeds. The
+vLLM path remained different. This clears the implemented serialization and
+reload layer in the bounded slice, but all four conditions still failed every
+content row. The result is diagnostic negative evidence, not runtime
+equivalence or production-quality evidence.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \

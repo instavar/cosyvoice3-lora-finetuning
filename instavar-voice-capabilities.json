@@ -261,20 +261,26 @@
       "precision": "runtime default",
       "batching": false,
       "conformance": {
-        "status": "not_run",
-        "clean_checkout": false,
-        "fresh_process": false,
-        "prompt_count": 0,
-        "seed_count": 0
+        "status": "negative_result",
+        "clean_checkout": true,
+        "fresh_process": true,
+        "prompt_count": 1,
+        "seed_count": 3,
+        "report": "reports/matched-runtime-four-way-2026-08-13.md"
       },
       "evidence": [
         {
           "level": "repository_declared",
           "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
           "claim": "The companion can persist merged LLM state as content-bound safetensors and reload it into the pretrained PyTorch architecture in a separate process."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-runtime-four-way-2026-08-13.md",
+          "claim": "A real persisted epoch-12 safetensors model reloaded in a fresh PyTorch process emitted byte-identical audio to adapter and in-memory merged PyTorch for three seeds, but every content-faithfulness row failed."
         }
       ],
-      "notes": "The artifact contract has model-free and small-model safetensors coverage. Real CosyVoice3 export and fresh-process generation remain unrun."
+      "notes": "The real export and fresh-process reload are executed and diagnostically useful. Serialization and reload preserved the tested PyTorch outputs, but content conformance remains negative."
     },
     {
       "id": "vllm",
@@ -292,7 +298,7 @@
         "fresh_process": true,
         "prompt_count": 1,
         "seed_count": 3,
-        "report": "reports/matched-runtime-three-way-2026-08-13.md"
+        "report": "reports/matched-runtime-four-way-2026-08-13.md"
       },
       "evidence": [
         {
@@ -309,6 +315,11 @@
           "level": "negative_result",
           "ref": "reports/matched-runtime-three-way-2026-08-13.md",
           "claim": "The three-way run reproduced vLLM divergence after adapter and merged PyTorch emitted identical WAVs; a rerun of the same export also changed waveform hashes despite identical durations."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-runtime-four-way-2026-08-13.md",
+          "claim": "The four-way run cleared persisted serialization and fresh-process PyTorch reload in the tested slice. vLLM still diverged and failed all content rows, while its WAV hashes matched the immediately preceding run."
         }
       ]
     },
