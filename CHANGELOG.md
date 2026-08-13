@@ -4,6 +4,11 @@
 
 ### Bug fixes
 
+- Replace implicit YAML-stem checkpoint deletion with a two-phase, explicitly
+  adopted, content-bound DeepSpeed prune plan and exact digest confirmation.
+- Keep the DeepSpeed pruning contract executable on clean Python 3.11 through
+  3.14 without an undeclared YAML dependency, and honor `--keep-best` values
+  greater than one.
 - Route frozen-plan style instructions through CosyVoice3
   `inference_instruct2` instead of silently discarding them on the zero-shot
   path. Reject malformed control text and runtimes without instruction support

@@ -22,7 +22,7 @@ tools/train_cosyvoice3_lora.py        - LoRA training with PEFT + DeepSpeed Stag
 tools/infer_cosyvoice3_lora.py        - LoRA inference (loads adapter on top of pretrained)
 tools/generate_cosyvoice3_samples.py  - Batch sample generation with seed retry and metadata
 tools/infer_cosyvoice3_hybrid.py      - Hybrid text normalization inference (wetext + ttsfrd)
-tools/prune_deepspeed_checkpoints.py  - Checkpoint retention/pruning by metric or age
+tools/prune_deepspeed_checkpoints.py  - Reviewed, content-bound DeepSpeed pruning
 patches/                              - Upstream patches for CV monitoring + overfitting detection
 configs/                              - DeepSpeed and training YAML configs
 ```
@@ -269,6 +269,55 @@ are also rejected because worker RNG and iterator state are not persisted.
 This is repository-declared and dependency-free evidence. No real CosyVoice
 model, GPU, optimizer, interrupted process, numerical continuation comparison,
 new audio, or listening test ran for this implementation.
+
+### Review legacy DeepSpeed pruning before deletion
+
+Legacy DeepSpeed checkpoints do not carry the guarded continuation sidecars, so
+their numeric names and YAML metadata are not deletion authority. The pruner
+therefore has no discovery-and-delete mode. First stop every writer, explicitly
+adopt every candidate tag into a new content-bound plan, and review the printed
+keep and remove sets:
+
+```bash
+python tools/prune_deepspeed_checkpoints.py \
+  --plan-out /safe/review/cosy-prune-plan.json \
+  --model-dir exp/your_run/lora \
+  --owned-tag epoch_10_whole \
+  --owned-tag epoch_11_whole \
+  --owned-tag epoch_12_whole \
+  --keep-latest 1 \
+  --keep-best 1 \
+  --metric loss
+```
+
+The plan's parent directory must already exist and be owned by the effective
+user. The tool does not create approval-artifact directories implicitly.
+
+Plan creation never deletes. It accepts only the bounded scalar YAML subset
+emitted by CosyVoice, requires a payload for every adopted tag, and binds each
+direct-child file and directory by path, type, device, inode, mode, size,
+modification time, and content digest. Symlinks, hard-linked files, duplicate
+keys, non-finite metrics, malformed metadata, implicit glob adoption, and an
+existing plan destination fail closed.
+
+After reviewing the JSON and preserving the printed digest out of band, execute
+that exact plan in a separate command:
+
+```bash
+python tools/prune_deepspeed_checkpoints.py \
+  --execute-plan /safe/review/cosy-prune-plan.json \
+  --confirm-plan-sha256 <reviewed-plan-sha256>
+```
+
+Execution revalidates the plan, pruner source, model-directory identity, and
+every adopted component under a cooperative lock before staging victims under
+hidden direct-child names and removing them. Any byte or inode drift aborts
+before staging. The lock cannot stop a writer that ignores it, so stopping
+training and synchronization jobs remains a required operator precondition.
+Re-executing the same plan safely completes an interrupted staging or removal
+when every remaining staged object still has the exact planned identity.
+The plan itself is deletion authority: store it outside the checkpoint tree and
+protect it like an operations approval artifact.
 
 Set `PERSISTED_PACKAGE_ROOT` to an existing directory outside the work and
 source checkouts, pretrained and Qwen dependency directories, both prepared
