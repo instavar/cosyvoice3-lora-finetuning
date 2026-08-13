@@ -447,6 +447,17 @@ does not prove deterministic runtime execution. The wrapper is process-local
 and briefly replaces vLLM's request constructor while a serial request starts.
 It is intended for these serial diagnostic runners, not a concurrent server.
 
+The preregistered multi-prompt result is documented in
+[`reports/matched-vllm-sampling-profiles-2026-08-14.md`](reports/matched-vllm-sampling-profiles-2026-08-14.md).
+Two unchanged upstream fresh-process runs were byte-identical for all nine
+prompt and seed pairs. Adding a request seed changed only the three structured
+long-form rows, while adding top-p 0.8 changed every row and produced one
+near-silent invalid output. Every evaluable row still failed requested-text
+WER. The result supports bounded request-profile diagnosis, not quality or
+runtime-equivalence promotion. Per-request token and seed receipts remain the
+next instrumentation requirement because text length and frontend request
+count are confounded in the long-form effect.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \

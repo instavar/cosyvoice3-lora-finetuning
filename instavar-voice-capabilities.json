@@ -95,9 +95,14 @@
               "level": "negative_result",
               "ref": "reports/matched-runtime-three-way-2026-08-13.md",
               "claim": "Adapter PyTorch and merged-in-memory PyTorch emitted byte-identical audio for three seeds, while merged vLLM diverged and every condition failed content faithfulness."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
+              "claim": "A 45-row multi-prompt study reproduced two upstream vLLM runs byte for byte, localized a request-seed association to structured long-form rows, found a broad top-p effect including one near-silent failure, and rejected every condition on content faithfulness."
             }
           ],
-          "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, upstream routes, and recorded PyTorch and vLLM environments. The blind emotion-obedience and runtime-comparison packs remain unrated."
+          "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, explicit request profiles, and recorded PyTorch and vLLM environments. The blind emotion-obedience and sampling-profile packs remain unrated."
         },
         "evaluation": {
           "status": "negative_result",
@@ -126,9 +131,14 @@
               "level": "negative_result",
               "ref": "reports/matched-runtime-three-way-2026-08-13.md",
               "claim": "The preregistered three-way suite localized the divergence downstream of the in-memory merge for this slice, recorded vLLM rerun waveform drift, and retained an unrated nine-sample blind pack."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
+              "claim": "The 45-row suite bound request profiles, exact audio identity, objective and content metrics, prosody, artifact verification, and a counterbalanced blind pack while retaining one invalid near-silent output."
             }
           ],
-          "boundary": "Corrected route execution is validated for this focused slice, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
+          "boundary": "Corrected route and request-profile execution are validated for focused slices, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
         },
         "packaging": {
           "status": "repository_declared",
@@ -264,9 +274,9 @@
         "status": "negative_result",
         "clean_checkout": true,
         "fresh_process": true,
-        "prompt_count": 1,
+        "prompt_count": 3,
         "seed_count": 3,
-        "report": "reports/matched-runtime-four-way-2026-08-13.md"
+        "report": "reports/matched-vllm-sampling-profiles-2026-08-14.md"
       },
       "evidence": [
         {
@@ -278,6 +288,11 @@
           "level": "negative_result",
           "ref": "reports/matched-runtime-four-way-2026-08-13.md",
           "claim": "A real persisted epoch-12 safetensors model reloaded in a fresh PyTorch process emitted byte-identical audio to adapter and in-memory merged PyTorch for three seeds, but every content-faithfulness row failed."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
+          "claim": "The persisted model completed nine local-context, pronunciation, and structured-long-form rows, but all failed WER and five had repetition excess."
         }
       ],
       "notes": "The real export and fresh-process reload are executed and diagnostically useful. Serialization and reload preserved the tested PyTorch outputs, but content conformance remains negative."
@@ -296,9 +311,9 @@
         "status": "negative_result",
         "clean_checkout": true,
         "fresh_process": true,
-        "prompt_count": 1,
+        "prompt_count": 3,
         "seed_count": 3,
-        "report": "reports/matched-runtime-four-way-2026-08-13.md"
+        "report": "reports/matched-vllm-sampling-profiles-2026-08-14.md"
       },
       "evidence": [
         {
@@ -320,6 +335,11 @@
           "level": "negative_result",
           "ref": "reports/matched-runtime-four-way-2026-08-13.md",
           "claim": "The four-way run cleared persisted serialization and fresh-process PyTorch reload in the tested slice. vLLM still diverged and failed all content rows, while its WAV hashes matched the immediately preceding run."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
+          "claim": "Two upstream runs reproduced nine WAVs byte for byte. Request seeding changed only structured-long-form rows, top-p 0.8 changed all rows and caused one near-silent output, and every profile failed content faithfulness."
         }
       ]
     },
@@ -377,9 +397,9 @@
       "baseline_candidate": "cosyvoice3-base",
       "adapted_candidate": "cosyvoice3-epoch12",
       "blockers": [
-        "The one-pair long-form result requires preregistered multi-seed replication before estimating failure frequency.",
         "The corrected emotion-route blind listening ratings are incomplete.",
-        "The three-way run localized the observed divergence after the in-memory merge but did not separate export serialization from vLLM decoding; persist and fingerprint a reloadable merged PyTorch artifact under a new frozen plan."
+        "The 45-file sampling-profile blind pack remains unrated and cannot override universal content failure.",
+        "The row-level sampling receipt does not record actual vLLM request ordinals, runtime-selected upstream seeds, token counts, or token hashes, so text length and frontend request count remain confounded."
       ]
     }
   },
@@ -397,6 +417,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "The three-way runtime comparison found byte-identical adapter and merged-in-memory PyTorch audio while vLLM diverged, but all conditions failed content faithfulness. Persist and fingerprint a reloadable merged PyTorch artifact to separate serialization from vLLM decoding, then expand the frozen plan to pronunciation and long-form prompts."
+    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. Add per-request seed, ordinal, token-count, and token-hash receipts before a split-boundary follow-up."
   ]
 }
