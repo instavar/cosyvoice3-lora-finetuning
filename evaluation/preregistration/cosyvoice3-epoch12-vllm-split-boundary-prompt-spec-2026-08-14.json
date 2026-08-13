@@ -1,0 +1,71 @@
+{
+  "id": "cosyvoice3-vllm-split-boundary",
+  "version": "1.0.0",
+  "locale": "en-SG",
+  "purpose": "Separate text length from frontend request count at the observed CosyVoice English split boundary.",
+  "generation": {
+    "seeds": [
+      42,
+      314159,
+      20260812
+    ],
+    "seeds_per_candidate": 3,
+    "require_same_transcripts": true,
+    "require_frozen_generation_settings": true,
+    "fresh_process_per_sample": true
+  },
+  "prompts": [
+    {
+      "id": "prefix",
+      "category": "frontend_split_boundary",
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_frontend_segments": [
+        {
+          "normalized_text_sha256": "b009798cc608fa636e0856d74ef6ce388ed791eca84c55b51150e29afeda6006",
+          "text_token_count": 64
+        }
+      ]
+    },
+    {
+      "id": "tail",
+      "category": "frontend_split_boundary",
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_frontend_segments": [
+        {
+          "normalized_text_sha256": "066f0d02da84e2b1fe471e4213f4e1426c0f8bb6cb6c7d021eb2384bfc89112c",
+          "text_token_count": 20
+        }
+      ]
+    },
+    {
+      "id": "combined",
+      "category": "frontend_split_boundary",
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_frontend_segments": [
+        {
+          "normalized_text_sha256": "b009798cc608fa636e0856d74ef6ce388ed791eca84c55b51150e29afeda6006",
+          "text_token_count": 64
+        },
+        {
+          "normalized_text_sha256": "066f0d02da84e2b1fe471e4213f4e1426c0f8bb6cb6c7d021eb2384bfc89112c",
+          "text_token_count": 20
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "kind": "non-generative frontend preview",
+    "producer_revision": "a4df080810c225f54a4e5142eacc403cc27f310e",
+    "runtime": "CosyVoice3 frontend from Fun-CosyVoice3-0.5B",
+    "text_frontend_requested": true,
+    "normalizer_enabled": true,
+    "normalizer_backend": "",
+    "performed_before_synthesis": true
+  },
+  "measurement_limits": [
+    "The deliberate lack of whitespace after the prefix period is a mechanical boundary probe, not a naturalness prompt.",
+    "The preview uses the same frontend method but does not intercept or prove the later synthesis call.",
+    "Token and audio equality are diagnostic results, not quality or deterministic-runtime claims.",
+    "Direct findings remain bounded to the frozen artifact, frontend, vLLM version, host, prompts, and seeds."
+  ]
+}

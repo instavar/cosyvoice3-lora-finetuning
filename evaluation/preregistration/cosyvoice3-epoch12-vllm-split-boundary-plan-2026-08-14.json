@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.1.0",
+  "prompt_pack": {
+    "id": "cosyvoice3-vllm-split-boundary",
+    "version": "1.0.0",
+    "sha256": "22ca95b19601dcb72af636cacb8c25ea54d4fff3e940a664726748a68aa1f576"
+  },
+  "candidate_ids": [
+    "cosyvoice3-epoch12-vllm-upstream",
+    "cosyvoice3-epoch12-vllm-request-seeded"
+  ],
+  "seeds": [
+    42,
+    314159,
+    20260812
+  ],
+  "selected_prompt_ids": [
+    "prefix",
+    "tail",
+    "combined"
+  ],
+  "prompt_count": 3,
+  "sample_count": 18,
+  "required_objective_metrics": [
+    "asr_word_error_rate",
+    "speaker_embedding_similarity",
+    "invalid_output_rate",
+    "duration_seconds",
+    "sample_rate_hz",
+    "silence_fraction",
+    "clipping_fraction",
+    "real_time_factor",
+    "peak_memory_bytes"
+  ],
+  "samples": [
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--prefix--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/prefix/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--prefix--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/prefix/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--prefix--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/prefix/seed-20260812.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--tail--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/tail/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--tail--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/tail/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--tail--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/tail/seed-20260812.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--combined--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/combined/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--combined--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/combined/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-upstream--combined--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-upstream/combined/seed-20260812.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--prefix--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/prefix/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--prefix--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/prefix/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--prefix--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "prefix",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/prefix/seed-20260812.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--tail--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/tail/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--tail--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/tail/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--tail--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "tail",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/tail/seed-20260812.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--combined--seed-42",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 42,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/combined/seed-42.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--combined--seed-314159",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 314159,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/combined/seed-314159.wav"
+    },
+    {
+      "sample_id": "cosyvoice3-epoch12-vllm-request-seeded--combined--seed-20260812",
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "prompt_id": "combined",
+      "category": "frontend_split_boundary",
+      "seed": 20260812,
+      "text": "Before we publish the benchmark, we compare the same voice on the same reference and the same seed. We check whether the words remain accurate, whether the speaker remains recognisable, and whether the rhythm stays varied. We also retain every failed output so that a convenient rerun cannot hide a weak result under a fixed protocol.Only then do we inspect runtime speed and memory use, and compare those measurements against the content gate.",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-vllm-request-seeded/combined/seed-20260812.wav"
+    }
+  ],
+  "generation_requirements": {
+    "same_transcripts": true,
+    "frozen_generation_settings": true,
+    "record_failures_as_observations": true,
+    "fresh_process_per_sample": true
+  }
+}

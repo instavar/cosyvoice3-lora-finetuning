@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "analysis_mode": "frontend_split_boundary_probe",
+  "date": "2026-08-14",
+  "date_basis": {
+    "local_timezone": "Asia/Singapore",
+    "server_timestamp": "2026-08-13T19:10:16Z",
+    "source": "GitHub Actions run 31734483431"
+  },
+  "environment": {
+    "producer_revision": "a4df080810c225f54a4e5142eacc403cc27f310e",
+    "evaluator_revision": "2812e200233804fde685c35ea1da1cbf9fe8ef4b",
+    "evaluator_version": "0.41.0",
+    "vllm_version": "0.15.1"
+  },
+  "prompt_spec": {
+    "path": "evaluation/preregistration/cosyvoice3-epoch12-vllm-split-boundary-prompt-spec-2026-08-14.json",
+    "file_sha256": "98a24807af374649eb93a58aa11a7650f9e8e47a532e51118b4d9b1a6da27fb8",
+    "canonical_sha256": "22ca95b19601dcb72af636cacb8c25ea54d4fff3e940a664726748a68aa1f576"
+  },
+  "generation_plan": {
+    "path": "evaluation/preregistration/cosyvoice3-epoch12-vllm-split-boundary-plan-2026-08-14.json",
+    "sha256": "f3cf6fcac69a278708509b84f48c2459cafaa0794cb95414476c9dab890905ee"
+  },
+  "reference": {
+    "audio_path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260814_cosyvoice3_vllm_input_batch_smoke_v1/inputs/reference.wav",
+    "audio_sha256": "2dc2a3d83dab1e5569d1adac7828c907acc78271cb495d80228b15ca6e460237",
+    "transcript_path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260814_cosyvoice3_vllm_input_batch_smoke_v1/inputs/reference-transcript.txt",
+    "transcript_sha256": "7b5f531abde272946e3638bbd35736923e1b3562779deff69aed968bf471ba1e"
+  },
+  "artifact_bindings": {
+    "source_adapter": {
+      "path": "/mnt/work/chee-wei-jie/voice-models/CosyVoice_runs/female01_cv3_lora_lr5e5_run1/exp/female01/cosyvoice3/llm/deepspeed/epoch_12_whole",
+      "tree_sha256": "8bd5e1ca24c71a099cec6612230c9c448cbcff0c3f0ee15ad7a15b26e7bd2bb8",
+      "artifact_set_sha256": "de6cfceafb0155d8bf89336d4c39618b46bcf9ba230da5f5e0c806dfe0d0a87f",
+      "relation": "exact"
+    },
+    "vllm_export": {
+      "path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260813_cosyvoice3_pytorch_vllm_v1/artifacts/epoch12-vllm-merged-export",
+      "tree_sha256": "624f504ea3558f391279fcbcdc7109a38849ea277bb5ab1ef00323c82a30cc22",
+      "artifact_set_sha256": "db7b3b425b4f8b4353c8111d49f57ebbf3f351a04352eadb3adb2ae80a26c866",
+      "relation": "derived"
+    }
+  },
+  "conditions": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream",
+      "inference_mode": "merged-vllm",
+      "sampling_profile": "upstream",
+      "fresh_process_per_sample": true
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded",
+      "inference_mode": "merged-vllm",
+      "sampling_profile": "request-seeded",
+      "fresh_process_per_sample": true
+    }
+  ],
+  "calibration_expectations": {
+    "prefix": {
+      "segment_count": 1,
+      "segment_token_counts": [64],
+      "segment_hashes": [
+        "b009798cc608fa636e0856d74ef6ce388ed791eca84c55b51150e29afeda6006"
+      ]
+    },
+    "tail": {
+      "segment_count": 1,
+      "segment_token_counts": [20],
+      "segment_hashes": [
+        "066f0d02da84e2b1fe471e4213f4e1426c0f8bb6cb6c7d021eb2384bfc89112c"
+      ]
+    },
+    "combined": {
+      "segment_count": 2,
+      "segment_token_counts": [64, 20],
+      "segment_hashes": [
+        "b009798cc608fa636e0856d74ef6ce388ed791eca84c55b51150e29afeda6006",
+        "066f0d02da84e2b1fe471e4213f4e1426c0f8bb6cb6c7d021eb2384bfc89112c"
+      ]
+    }
+  },
+  "hypotheses": [
+    {
+      "id": "h1_frontend_request_count",
+      "statement": "Every live vLLM request count equals the calibrated frontend segment count: one for prefix, one for tail, and two for combined."
+    },
+    {
+      "id": "h2_prefix_identity",
+      "statement": "Within each profile and seed, the combined row's first request token count and hash equal the standalone prefix row."
+    },
+    {
+      "id": "h3_request_seed_reset",
+      "statement": "Within request-seeded and each seed, the combined row's second request token count and hash equal the standalone tail row because each frontend request receives the same request-local seed."
+    },
+    {
+      "id": "h4_global_generator_advance",
+      "statement": "Within upstream and each seed, the combined row's second request token hash may differ from the standalone tail row because the process-global generator has already produced the prefix request."
+    }
+  ],
+  "decision_rules": {
+    "coverage_requires_all_18_rows": true,
+    "fresh_process_requires_exact_sample_selector": true,
+    "frontend_receipt_must_match_calibration": true,
+    "vllm_request_count_must_match_frontend_segment_count": true,
+    "receipt_must_be_complete_for_every_request": true,
+    "failures_are_retained_and_not_replaced": true,
+    "content_gate_precedes_secondary_metrics": true,
+    "primary_content_thresholds": {
+      "maximum_requested_text_wer": 0.1,
+      "maximum_repeated_four_gram_excess": 0.05,
+      "maximum_reference_exclusive_four_gram_hits": 1,
+      "require_evaluable_asr": true
+    },
+    "proves_runtime_equivalence": false,
+    "proves_deterministic_execution": false
+  },
+  "required_evidence": [
+    "artifact verification before and after generation",
+    "one observation for every planned row including failures",
+    "one fresh runner process per exact sample id",
+    "frontend segment hashes and token counts per row",
+    "live vLLM request count and complete request receipts per row",
+    "output-token count and SHA-256 per frontend request",
+    "exact WAV SHA-256 per valid row",
+    "audio validity probes",
+    "faster-whisper ASR",
+    "SpeechBrain ECAPA speaker similarity",
+    "prosody proxies",
+    "content-faithfulness report",
+    "explicit prefix and tail request-hash comparisons"
+  ],
+  "measurement_boundaries": [
+    "The combined prompt deliberately omits whitespace after the prefix period to preserve exact segment hashes. It is a mechanical boundary probe, not a naturalness prompt.",
+    "Frontend preview receipts use the same method and input but do not intercept the later generation call.",
+    "Live request receipts are process-local serial diagnostics and are not a concurrent-server binding.",
+    "A matched request-token hash does not imply matched waveform bytes because downstream synthesis and concatenation remain separate layers.",
+    "ASR, speaker, and prosody metrics do not establish accent fidelity, cadence naturalness, listening fatigue, or preference.",
+    "All direct findings remain bounded to the frozen model, artifacts, reference, prompts, seeds, host, and library versions."
+  ]
+}
