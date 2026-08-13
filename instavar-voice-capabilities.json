@@ -90,9 +90,14 @@
               "level": "negative_result",
               "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
               "claim": "The epoch-12 PyTorch adapter and derived merged vLLM export completed three matched seeds, but both failed every content-faithfulness row and vLLM had higher mean WER, more repetition, longer output, and higher peak GPU allocation."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-runtime-three-way-2026-08-13.md",
+              "claim": "Adapter PyTorch and merged-in-memory PyTorch emitted byte-identical audio for three seeds, while merged vLLM diverged and every condition failed content faithfulness."
             }
           ],
-          "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, upstream route, and PyTorch environment. The blind emotion-obedience pack remains unrated."
+          "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, upstream routes, and recorded PyTorch and vLLM environments. The blind emotion-obedience and runtime-comparison packs remain unrated."
         },
         "evaluation": {
           "status": "negative_result",
@@ -116,6 +121,11 @@
               "level": "negative_result",
               "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
               "claim": "The matched runtime suite bound exact PyTorch artifacts and a derived vLLM export, completed objective, prosody, content, audio-identity, and blind-pack artifacts, and rejected a runtime-equivalence or quality promotion."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-runtime-three-way-2026-08-13.md",
+              "claim": "The preregistered three-way suite localized the divergence downstream of the in-memory merge for this slice, recorded vLLM rerun waveform drift, and retained an unrated nine-sample blind pack."
             }
           ],
           "boundary": "Corrected route execution is validated for this focused slice, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
@@ -224,20 +234,21 @@
       "precision": "runtime default",
       "batching": false,
       "conformance": {
-        "status": "not_run",
-        "clean_checkout": false,
-        "fresh_process": false,
-        "prompt_count": 0,
-        "seed_count": 0
+        "status": "negative_result",
+        "clean_checkout": true,
+        "fresh_process": true,
+        "prompt_count": 1,
+        "seed_count": 3,
+        "report": "reports/matched-runtime-three-way-2026-08-13.md"
       },
       "evidence": [
         {
-          "level": "repository_declared",
-          "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
-          "claim": "The evaluation runner can merge the selected adapter in memory while retaining PyTorch decoding, providing the missing middle condition for three-way runtime diagnosis."
+          "level": "negative_result",
+          "ref": "reports/matched-runtime-three-way-2026-08-13.md",
+          "claim": "Merged-in-memory PyTorch emitted byte-identical audio to adapter PyTorch for three seeds, but both failed every content-faithfulness row."
         }
       ],
-      "notes": "Model-free contract coverage only. A real frozen GPU run is required before conformance promotion."
+      "notes": "The route is executed and diagnostically useful. Content conformance remains negative, and no persistent post-merge artifact binding exists."
     },
     {
       "id": "vllm",
@@ -255,7 +266,7 @@
         "fresh_process": true,
         "prompt_count": 1,
         "seed_count": 3,
-        "report": "reports/matched-runtime-pytorch-vllm-2026-08-13.md"
+        "report": "reports/matched-runtime-three-way-2026-08-13.md"
       },
       "evidence": [
         {
@@ -267,6 +278,11 @@
           "level": "negative_result",
           "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
           "claim": "The derived export completed three matched seeds faster than PyTorch, but failed every content row, had higher mean WER and repetition, and did not establish equivalence."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-runtime-three-way-2026-08-13.md",
+          "claim": "The three-way run reproduced vLLM divergence after adapter and merged PyTorch emitted identical WAVs; a rerun of the same export also changed waveform hashes despite identical durations."
         }
       ]
     },
@@ -326,7 +342,7 @@
       "blockers": [
         "The one-pair long-form result requires preregistered multi-seed replication before estimating failure frequency.",
         "The corrected emotion-route blind listening ratings are incomplete.",
-        "The matched PyTorch and derived merged-vLLM run failed content faithfulness for both candidates and did not establish equivalence; isolate adapter-to-merge drift from merged-model-to-runtime drift under a new frozen three-way plan."
+        "The three-way run localized the observed divergence after the in-memory merge but did not separate export serialization from vLLM decoding; persist and fingerprint a reloadable merged PyTorch artifact under a new frozen plan."
       ]
     }
   },
@@ -344,6 +360,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "The first frozen PyTorch and merged-vLLM comparison completed but failed content faithfulness for both candidates. The derived export had higher mean WER, more repetition, longer output, and higher peak GPU allocation. A three-way adapter PyTorch, merged-weight PyTorch, and merged-weight vLLM comparison is still required to localize the drift."
+    "The three-way runtime comparison found byte-identical adapter and merged-in-memory PyTorch audio while vLLM diverged, but all conditions failed content faithfulness. Persist and fingerprint a reloadable merged PyTorch artifact to separate serialization from vLLM decoding, then expand the frozen plan to pronunciation and long-form prompts."
   ]
 }

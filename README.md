@@ -412,6 +412,15 @@ all three matched WAV hashes differ, and the blind pack is unrated. The run is
 bounded negative conformance evidence, not runtime-equivalence or quality
 evidence.
 
+The follow-up three-way run is documented in
+[`reports/matched-runtime-three-way-2026-08-13.md`](reports/matched-runtime-three-way-2026-08-13.md).
+Adapter PyTorch and merged-in-memory PyTorch produced byte-identical WAVs for
+all three seeds and identical content, speaker, audio, and prosody evidence.
+The retained vLLM export diverged, while all three conditions still failed the
+content gate. This localizes the observed drift to a layer after the in-memory
+merge for this slice, but export serialization and vLLM decoding remain
+confounded.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
