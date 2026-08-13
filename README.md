@@ -430,6 +430,23 @@ reload layer in the bounded slice, but all four conditions still failed every
 content row. The result is diagnostic negative evidence, not runtime
 equivalence or production-quality evidence.
 
+The runtime runner can isolate two vLLM request-sampling differences with
+`--vllm-sampling-profile`. The default `upstream` profile preserves CosyVoice's
+current vLLM request, which passes top-k 25 but leaves vLLM 0.15.1 at its
+top-p 1.0 default with no per-request seed. `request-seeded` adds only the
+frozen plan-row seed. `request-seeded-top-p-0.8` adds top-p 0.8 after the seed,
+matching the corresponding PyTorch nucleus threshold. Every vLLM observation
+records the selected profile and effective request parameters.
+
+These profiles are diagnostic controls, not an equivalence shim. PyTorch still
+uses CosyVoice repetition-aware sampling, which vLLM's native request sampler
+does not reproduce. Compare `upstream` to `request-seeded`, then compare
+`request-seeded` to `request-seeded-top-p-0.8`, so each transition changes one
+declared variable. Exact output hashes remain required because a request seed
+does not prove deterministic runtime execution. The wrapper is process-local
+and briefly replaces vLLM's request constructor while a serial request starts.
+It is intended for these serial diagnostic runners, not a concurrent server.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
@@ -596,6 +613,15 @@ python tools/infer_cosyvoice3_lora.py \
     --text "Text to synthesize" \
     --out-wav output-vllm-reused.wav
 ```
+
+For a bounded request-seeded diagnostic, add both
+`--vllm-sampling-profile request-seeded --seed 42`. To add the PyTorch nucleus
+threshold as the next single-variable condition, use
+`--vllm-sampling-profile request-seeded-top-p-0.8 --seed 42`. A seeded profile
+without `--seed`, or any vLLM profile on a non-vLLM route, fails before model
+loading. The standalone helper also rejects a seeded multi-text batch because
+one CLI seed would ambiguously restart the same request stream for every text.
+Use the evaluation runner for multi-row plans with a recorded seed per row.
 
 Do not use process exit status alone as the success criterion. CosyVoice can
 raise an exception in its background LLM thread while the parent process still

@@ -53,6 +53,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-text-frontend", dest="text_frontend", action="store_false")
     parser.add_argument("--vllm-dir")
     parser.add_argument("--reuse-vllm-dir", action="store_true")
+    parser.add_argument(
+        "--vllm-sampling-profile",
+        choices=("upstream", "request-seeded", "request-seeded-top-p-0.8"),
+        default="upstream",
+    )
     parser.add_argument("--merged-pytorch-dir")
     parser.set_defaults(text_frontend=True)
     return parser.parse_args()
@@ -154,6 +159,7 @@ def main() -> int:
             peft_model,
             args.vllm_dir,
             reuse_vllm_dir=args.reuse_vllm_dir,
+            sampling_profile=args.vllm_sampling_profile,
         )
     elif args.inference_mode == "merged-pytorch":
         if peft_model is None:
@@ -170,6 +176,13 @@ def main() -> int:
         output = args.output_dir / row["expected_audio_path"]
         output.parent.mkdir(parents=True, exist_ok=True)
         seed_everything(int(row["seed"]))
+        if args.inference_mode == "merged-vllm":
+            from vllm_sampling_controls import (
+                set_vllm_request_seed,
+                vllm_sampling_evidence,
+            )
+
+            set_vllm_request_seed(cosyvoice, int(row["seed"]))
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.synchronize()
@@ -205,6 +218,8 @@ def main() -> int:
             "instruction_applied": False,
             "background_thread_check": "threading_excepthook_during_stream_consumption",
         }
+        if args.inference_mode == "merged-vllm":
+            observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)
         background_capture = BackgroundThreadFailureCapture()
         try:
             with background_capture:

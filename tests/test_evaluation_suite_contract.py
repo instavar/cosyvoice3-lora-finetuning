@@ -43,6 +43,7 @@ class EvaluationSuiteContractTests(unittest.TestCase):
             "vllm_dir": None,
             "reuse_vllm_dir": False,
             "merged_pytorch_dir": None,
+            "vllm_sampling_profile": "upstream",
         }
         values.update(overrides)
         return argparse.Namespace(**values)
@@ -119,6 +120,30 @@ class EvaluationSuiteContractTests(unittest.TestCase):
                     "merged-pytorch",
                     lora_dir=str(self.adapter),
                     vllm_dir=str(self.root / "merged"),
+                ),
+                self.parser,
+            )
+
+    def test_vllm_sampling_profiles_are_confined_to_vllm_mode(self) -> None:
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(
+                self.args("base", vllm_sampling_profile="request-seeded"),
+                self.parser,
+            )
+        merged = self.args(
+            "merged-vllm",
+            lora_dir=str(self.adapter),
+            vllm_dir=str(self.root / "merged-sampling"),
+            vllm_sampling_profile="request-seeded-top-p-0.8",
+        )
+        self.assertEqual(resolve_inference_mode(merged, self.parser), "merged-vllm")
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(
+                self.args(
+                    "merged-vllm",
+                    lora_dir=str(self.adapter),
+                    vllm_dir=str(self.root / "other-merged"),
+                    vllm_sampling_profile="unknown",
                 ),
                 self.parser,
             )

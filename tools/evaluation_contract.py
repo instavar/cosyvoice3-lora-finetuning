@@ -25,6 +25,13 @@ def resolve_inference_mode(
 ) -> str:
     """Resolve exactly one unchanged-base, adapter, or merged condition."""
     mode = args.inference_mode
+    vllm_sampling_profile = getattr(args, "vllm_sampling_profile", "upstream")
+    if vllm_sampling_profile not in {
+        "upstream",
+        "request-seeded",
+        "request-seeded-top-p-0.8",
+    }:
+        parser.error("unsupported vLLM sampling profile")
     if mode is None:
         if args.lora_dir and args.vllm_dir:
             mode = "merged-vllm"
@@ -62,6 +69,7 @@ def resolve_inference_mode(
             or args.vllm_dir
             or args.reuse_vllm_dir
             or args.merged_pytorch_dir
+            or vllm_sampling_profile != "upstream"
         ):
             parser.error(
                 "base mode forbids adapted and merged artifact arguments"
@@ -69,7 +77,12 @@ def resolve_inference_mode(
         return mode
 
     if mode == "reloaded-merged-pytorch":
-        if args.lora_dir or args.vllm_dir or args.reuse_vllm_dir:
+        if (
+            args.lora_dir
+            or args.vllm_dir
+            or args.reuse_vllm_dir
+            or vllm_sampling_profile != "upstream"
+        ):
             parser.error(
                 "reloaded-merged-pytorch mode accepts only --merged-pytorch-dir"
             )
@@ -91,7 +104,12 @@ def resolve_inference_mode(
         parser.error(str(error))
 
     if mode in {"adapter", "merged-pytorch"}:
-        if args.vllm_dir or args.reuse_vllm_dir or args.merged_pytorch_dir:
+        if (
+            args.vllm_dir
+            or args.reuse_vllm_dir
+            or args.merged_pytorch_dir
+            or vllm_sampling_profile != "upstream"
+        ):
             parser.error(f"{mode} mode forbids other merged artifact arguments")
         return mode
 

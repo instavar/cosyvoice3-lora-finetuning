@@ -87,6 +87,7 @@ def enable_vllm_with_merged_lora(
     peft_model: PeftModel | None,
     vllm_dir: str,
     reuse_vllm_dir: bool = False,
+    sampling_profile: str = "upstream",
 ) -> None:
     """Merge the adapter, export the merged LLM, and enable CosyVoice vLLM."""
     # Dynamic custom-model registration is process-local. Keep the V1 engine
@@ -183,6 +184,9 @@ def enable_vllm_with_merged_lora(
     )
     cosyvoice.model.llm.vllm = LLMEngine.from_engine_args(engine_args)
     cosyvoice.model.llm.lock = threading.Lock()
+    from vllm_sampling_controls import install_vllm_sampling_control
+
+    install_vllm_sampling_control(cosyvoice, sampling_profile)
 
 
 def main() -> None:
@@ -216,6 +220,18 @@ def main() -> None:
         action="store_true",
         help="Reuse an existing --vllm-dir instead of creating a fresh merged export",
     )
+    parser.add_argument(
+        "--vllm-sampling-profile",
+        choices=("upstream", "request-seeded", "request-seeded-top-p-0.8"),
+        default="upstream",
+        help="Explicit vLLM request-sampling profile for bounded diagnosis",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Per-request seed required by request-seeded vLLM profiles",
+    )
     parser.add_argument("--no-text-frontend", dest="text_frontend", action="store_false", help="Disable text frontend")
     parser.set_defaults(text_frontend=True)
     args = parser.parse_args()
@@ -236,6 +252,15 @@ def main() -> None:
         raise ValueError("--out-wav only supports a single --text")
     if not args.out_wav and not args.out_dir:
         raise ValueError("Provide --out-wav or --out-dir")
+    if not args.vllm_dir and args.vllm_sampling_profile != "upstream":
+        raise ValueError("vLLM sampling profiles require --vllm-dir")
+    from vllm_sampling_controls import validate_standalone_sampling_request
+
+    validate_standalone_sampling_request(
+        args.vllm_sampling_profile,
+        args.seed,
+        len(texts),
+    )
 
     prompt_wav = Path(args.prompt_wav)
     if not prompt_wav.exists():
@@ -251,7 +276,12 @@ def main() -> None:
             peft_model,
             args.vllm_dir,
             reuse_vllm_dir=args.reuse_vllm_dir,
+            sampling_profile=args.vllm_sampling_profile,
         )
+        if args.vllm_sampling_profile != "upstream":
+            from vllm_sampling_controls import set_vllm_request_seed
+
+            set_vllm_request_seed(cosyvoice, args.seed)
 
     if args.out_dir:
         out_dir = Path(args.out_dir)
