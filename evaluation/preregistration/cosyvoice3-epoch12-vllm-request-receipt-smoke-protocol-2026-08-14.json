@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "date": "2026-08-14",
+  "date_basis": {
+    "local_timezone": "Asia/Singapore",
+    "server_timestamp": "2026-08-13T18:27:50Z",
+    "source": "GitHub Actions run 31730851833"
+  },
+  "purpose": "Verify that request-level vLLM receipts execute against the pinned GPU runtime before using them in a split-boundary study.",
+  "environment": {
+    "producer_revision": "7bcb693a65d9b1d59a581ab7028362ea734c6287",
+    "evaluator_revision": "2812e200233804fde685c35ea1da1cbf9fe8ef4b",
+    "evaluator_version": "0.41.0",
+    "vllm_version": "0.15.1"
+  },
+  "generation_plan": {
+    "path": "evaluation/preregistration/cosyvoice3-epoch12-vllm-request-receipt-smoke-plan-2026-08-14.json",
+    "sha256": "de733193609e350d0f9cf7cc532e6cfe19ec36fba475c6e83e6718d34f4cc5cf"
+  },
+  "artifact_binding": {
+    "vllm_export_path": "/mnt/work/chee-wei-jie/voice-model-outputs/conformance/20260813_cosyvoice3_pytorch_vllm_v1/artifacts/epoch12-vllm-merged-export",
+    "artifact_set_sha256": "db7b3b425b4f8b4353c8111d49f57ebbf3f351a04352eadb3adb2ae80a26c866",
+    "tree_sha256": "624f504ea3558f391279fcbcdc7109a38849ea277bb5ab1ef00323c82a30cc22",
+    "relation": "derived"
+  },
+  "conditions": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-upstream-receipt-smoke",
+      "sampling_profile": "upstream",
+      "fresh_process": true
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-vllm-request-seeded-receipt-smoke",
+      "sampling_profile": "request-seeded",
+      "fresh_process": true
+    }
+  ],
+  "acceptance": {
+    "planned_rows_must_be_retained": 2,
+    "request_count_per_row": 1,
+    "request_receipt_schema_version": "1.0.0",
+    "upstream_seed_source": "vllm_runtime_generated",
+    "request_seeded_runtime_seed": 42,
+    "request_seeded_seed_source": "supplied_request_seed",
+    "require_applied_sampling_state": true,
+    "require_positive_output_token_count": true,
+    "require_sha256_output_token_hash": true,
+    "forbid_retained_token_content": true,
+    "artifact_verification_before_and_after": true
+  },
+  "decision_boundary": "This smoke can validate receipt execution and schema fields only. It cannot establish content quality, perceptual quality, runtime equivalence, determinism, or a causal sampling explanation."
+}
