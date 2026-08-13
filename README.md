@@ -374,9 +374,11 @@ frozen listening review.
 The six historical 0.04-second artifacts remain valid negative runtime
 observations, but they were produced by an earlier runner that silently ignored
 the two frozen emotion instructions and used `inference_zero_shot` for every
-row. They therefore do not establish an emotion-control failure. Rerun the six
-rows through the corrected route before making any claim about instruction
-obedience or the adapted checkpoint's emotion support.
+row. They therefore do not establish an emotion-control failure. The corrected
+rerun now shows that all 12 Base and adapter rows execute through
+`inference_instruct2`, but every row fails requested-text WER and exact
+instruction-exclusive overlap appears in eight rows. Route execution is not
+instruction obedience or content fidelity.
 
 The first explicit matched Base-versus-adapter long-form run is documented in
 [`reports/matched-long-form-base-adapter-2026-08-13.md`](reports/matched-long-form-base-adapter-2026-08-13.md).
@@ -385,6 +387,14 @@ repeated, and reference-derived content. Base WER was 0.281385 and epoch-12 WER
 was 0.515152 for the one frozen pair. This is bounded negative evidence. Valid
 audio, fast generation, or higher speaker similarity must not be reported as a
 quality success when requested-text faithfulness fails.
+
+The preregistered corrected emotion-route run is documented in
+[`reports/matched-emotion-route-base-adapter-2026-08-13.md`](reports/matched-emotion-route-base-adapter-2026-08-13.md).
+Both candidates completed six runtime-valid rows and had mean WER `0.666667`.
+The staged blind pack remains unrated, so the run establishes no emotion or
+perceptual winner. A separately labeled post-hoc evaluator 0.39 diagnostic found
+instruction-exclusive two-gram overlap in five Base rows and three adapter
+rows.
 
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
@@ -608,3 +618,7 @@ automatically. Run them explicitly after generation with trusted, content-addres
 models, frozen decoding, and a preregistered reference plan where applicable.
 Runtime-bound observations, same-recording smoke scores, or human-recording ASR
 alone are not TTS-quality evidence.
+Version 0.39 adds a plan-bound spoken-instruction overlap diagnostic with
+separate preregisterable thresholds, requested-text collision exclusion, and
+hashed hits. Missing instructions are `not_applicable`; a clean exact-overlap
+result is not proof that ASR did not miss garbled or paraphrased control text.
