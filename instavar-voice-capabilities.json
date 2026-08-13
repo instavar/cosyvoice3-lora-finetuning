@@ -100,6 +100,11 @@
               "level": "negative_result",
               "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
               "claim": "A 45-row multi-prompt study reproduced two upstream vLLM runs byte for byte, localized a request-seed association to structured long-form rows, found a broad top-p effect including one near-silent failure, and rejected every condition on content faithfulness."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/vllm-split-boundary-probe-2026-08-14.md",
+              "claim": "An 18-row fresh-process boundary probe validated request-local seed reset across three seeds and separated frontend request count from text length, but both profiles failed eight of nine content rows."
             }
           ],
           "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, explicit request profiles, and recorded PyTorch and vLLM environments. The blind emotion-obedience and sampling-profile packs remain unrated."
@@ -136,6 +141,11 @@
               "level": "negative_result",
               "ref": "reports/matched-vllm-sampling-profiles-2026-08-14.md",
               "claim": "The 45-row suite bound request profiles, exact audio identity, objective and content metrics, prosody, artifact verification, and a counterbalanced blind pack while retaining one invalid near-silent output."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/vllm-split-boundary-probe-2026-08-14.md",
+              "claim": "The split-boundary suite bound calibrated frontend chunks to live request receipts, isolated every row in a fresh process, completed all objective extractors, and rejected both profiles on content faithfulness."
             }
           ],
           "boundary": "Corrected route and request-profile execution are validated for focused slices, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
@@ -276,7 +286,7 @@
         "fresh_process": true,
         "prompt_count": 3,
         "seed_count": 3,
-        "report": "reports/matched-vllm-sampling-profiles-2026-08-14.md"
+        "report": "reports/vllm-split-boundary-probe-2026-08-14.md"
       },
       "evidence": [
         {
@@ -355,6 +365,11 @@
           "level": "validated",
           "ref": "reports/vllm-input-batch-receipt-smoke-2026-08-14.md",
           "claim": "The corrected two-row GPU smoke produced valid audio and one complete live GPUInputBatch receipt per row. It distinguished the process-global and request-local generator paths, recorded 366 output tokens per row, and retained token hashes without token content."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/vllm-split-boundary-probe-2026-08-14.md",
+          "claim": "Across 18 fresh-process rows, combined prefix receipts matched standalone prefix in both profiles while the combined tail matched standalone tail only under request-local seeding. All receipt checks passed, but both profiles failed eight of nine content rows."
         }
       ]
     },
@@ -414,7 +429,7 @@
       "blockers": [
         "The corrected emotion-route blind listening ratings are incomplete.",
         "The 45-file sampling-profile blind pack remains unrated and cannot override universal content failure.",
-        "The published sampling-profile study predates request-level receipts. Corrected GPUInputBatch instrumentation passed its live smoke, but text length and frontend request count remain confounded until a preregistered split-boundary experiment uses it."
+        "The split-boundary mechanism is validated, but its deliberate mechanical prompt is not suitable for perceptual promotion and both profiles failed the primary content gate."
       ]
     }
   },
@@ -432,6 +447,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "The 45-row sampling-profile study reproduced unchanged upstream vLLM audio, localized request-seed differences to structured long-form rows, and found a broad top-p effect with one near-silent failure, but every condition failed content faithfulness. Corrected GPUInputBatch receipts passed a two-row live smoke. Run the preregistered split-boundary follow-up before attributing the earlier effect to request count."
+    "The 18-row split-boundary probe showed that the earlier request-seed association follows frontend request boundaries rather than text length alone. Test a per-utterance seed schedule and reset policy only after selecting a checkpoint that passes the content gate."
   ]
 }

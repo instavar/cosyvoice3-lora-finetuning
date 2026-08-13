@@ -505,6 +505,15 @@ The validator fails on missing, unexpected, or duplicate rows and malformed
 request shapes. A passing report validates receipt relationships only, not
 content, waveform identity, deterministic execution, or perceptual quality.
 
+The preregistered result is documented in
+[`reports/vllm-split-boundary-probe-2026-08-14.md`](reports/vllm-split-boundary-probe-2026-08-14.md).
+All 18 rows passed receipt and coverage checks. Across three seeds, combined
+request one always matched standalone prefix. Combined request two matched
+standalone tail only with request-local seeding; the unchanged upstream path
+advanced its process-global generator during request one. Both profiles still
+failed eight of nine content rows, so the mechanism is validated without a
+quality promotion.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
