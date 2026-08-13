@@ -13,6 +13,7 @@ ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from evaluation_contract import ADAPTER_ASSETS, BASE_ASSETS, resolve_inference_mode
+from evaluation_plan import select_plan_rows
 
 
 class EvaluationSuiteContractTests(unittest.TestCase):
@@ -47,6 +48,30 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         }
         values.update(overrides)
         return argparse.Namespace(**values)
+
+    def test_sample_selector_requires_one_exact_candidate_row(self) -> None:
+        plan = {
+            "samples": [
+                {"candidate_id": "upstream", "sample_id": "prefix-seed-42"},
+                {"candidate_id": "upstream", "sample_id": "tail-seed-42"},
+                {"candidate_id": "seeded", "sample_id": "prefix-seed-42"},
+            ]
+        }
+        self.assertEqual(
+            select_plan_rows(plan, "upstream", "tail-seed-42"),
+            [{"candidate_id": "upstream", "sample_id": "tail-seed-42"}],
+        )
+        self.assertEqual(len(select_plan_rows(plan, "upstream")), 2)
+        with self.assertRaisesRegex(ValueError, "found 0"):
+            select_plan_rows(plan, "upstream", "missing")
+        duplicate = {
+            "samples": [
+                {"candidate_id": "upstream", "sample_id": "duplicate"},
+                {"candidate_id": "upstream", "sample_id": "duplicate"},
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "found 2"):
+            select_plan_rows(duplicate, "upstream", "duplicate")
 
     def test_base_is_explicit_and_forbids_adapted_artifacts(self) -> None:
         self.assertEqual(resolve_inference_mode(self.args("base"), self.parser), "base")
@@ -230,6 +255,9 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         self.assertIn('"background_thread_failures"', source)
         self.assertIn('"background_thread_exception"', source)
         self.assertIn("begin_vllm_observation", source)
+        self.assertIn("build_frontend_segmentation_receipt", source)
+        self.assertIn('"frontend_segmentation": frontend_segmentation', source)
+        self.assertIn('"request_count_matches"', source)
         generation_end = source.index(
             'if args.inference_mode == "merged-vllm":\n'
             '            observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)'

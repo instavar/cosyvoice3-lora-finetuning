@@ -13,6 +13,7 @@ from pathlib import Path
 
 import torch
 import torchaudio
+from evaluation_plan import select_plan_rows
 from thread_failures import BackgroundThreadFailureCapture
 
 IDENTIFIER_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -38,6 +39,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt-text", required=True)
     parser.add_argument("--generation-plan", type=Path, required=True)
     parser.add_argument("--candidate-id", required=True)
+    parser.add_argument(
+        "--sample-id",
+        help=(
+            "run exactly one matching plan row; use one invocation per row when "
+            "the runtime must start from a fresh process"
+        ),
+    )
     parser.add_argument("--runtime-id")
     parser.add_argument("--artifact-set-id")
     parser.add_argument("--artifact-set-sha256")
@@ -116,6 +124,7 @@ def main() -> int:
         invoke_generation,
         validate_generation_inputs,
     )
+    from frontend_segmentation import build_frontend_segmentation_receipt
     from generate_cosyvoice3_samples import seed_everything
     if args.inference_mode in {"adapter", "merged-pytorch", "merged-vllm"}:
         from infer_cosyvoice3_lora import (
@@ -129,9 +138,7 @@ def main() -> int:
     plan = json.loads(args.generation_plan.read_text(encoding="utf-8"))
     if plan.get("schema_version") not in {"1.0.0", "1.1.0"}:
         raise ValueError("generation plan schema_version must equal 1.0.0 or 1.1.0")
-    rows = [row for row in plan.get("samples", []) if row.get("candidate_id") == args.candidate_id]
-    if not rows:
-        raise ValueError(f"generation plan has no rows for candidate {args.candidate_id!r}")
+    rows = select_plan_rows(plan, args.candidate_id, args.sample_id)
     for index, row in enumerate(rows):
         try:
             validate_generation_inputs(
@@ -175,6 +182,11 @@ def main() -> int:
     for row in rows:
         output = args.output_dir / row["expected_audio_path"]
         output.parent.mkdir(parents=True, exist_ok=True)
+        frontend_segmentation = build_frontend_segmentation_receipt(
+            cosyvoice.frontend,
+            str(row["text"]),
+            text_frontend=args.text_frontend,
+        )
         seed_everything(int(row["seed"]))
         if args.inference_mode == "merged-vllm":
             from vllm_sampling_controls import (
@@ -221,6 +233,7 @@ def main() -> int:
             "instruction_route": planned_instruction_route,
             "instruction_applied": False,
             "background_thread_check": "threading_excepthook_during_stream_consumption",
+            "frontend_segmentation": frontend_segmentation,
         }
         background_capture = BackgroundThreadFailureCapture()
         try:
@@ -317,6 +330,11 @@ def main() -> int:
             )
         if args.inference_mode == "merged-vllm":
             observation["vllm_sampling"] = vllm_sampling_evidence(cosyvoice)
+            request_count = observation["vllm_sampling"]["request_count"]
+            observation["frontend_segmentation"]["vllm_request_count"] = request_count
+            observation["frontend_segmentation"]["request_count_matches"] = (
+                request_count == observation["frontend_segmentation"]["segment_count"]
+            )
         observations.append(observation)
         write_observations(args.output_dir / "generation-observations.json", observations)
     return 0 if args.allow_invalid_output or all(row["valid"] for row in observations) else 1

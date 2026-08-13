@@ -479,6 +479,16 @@ global and request-local generator paths, and retained only output-token hashes
 and counts. The mechanism is now ready for the preregistered split-boundary
 follow-up, within its serial-runner boundary.
 
+Every observation now includes a privacy-preserving frontend segmentation
+receipt. It hashes the source and each normalized frontend segment, records
+segment character and tokenizer counts, and retains no normalized text. The
+receipt is a deterministic preview through the same frontend method, not proof
+that the later generation call consumed those exact segments. In merged-vLLM
+mode, the runner also compares the previewed segment count with the number of
+live input-batch request receipts. Use `--sample-id <exact-plan-sample-id>` to
+run exactly one frozen row per process when global runtime state must not carry
+between matched observations.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
@@ -489,6 +499,7 @@ python tools/run_evaluation_suite.py \
   --prompt-text "The exact reference transcript." \
   --generation-plan evaluation/generation-plan.json \
   --candidate-id cosyvoice3-base-pytorch \
+  --sample-id exact-plan-sample-id \
   --runtime-id pytorch-base \
   --output-dir evaluation/cosyvoice3-base-pytorch
 
