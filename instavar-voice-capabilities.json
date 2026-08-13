@@ -61,7 +61,7 @@
               "claim": "The selected adapter loaded in the recorded PyTorch runtime."
             }
           ],
-          "boundary": "The merged vLLM export has not passed a matched equivalence suite."
+          "boundary": "The merged vLLM export completed a matched three-seed comparison, but both runtimes failed content faithfulness and the derived export did not establish equivalence."
         },
         "held_out_inference": {
           "status": "negative_result",
@@ -85,6 +85,11 @@
               "level": "negative_result",
               "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
               "claim": "The corrected inference_instruct2 route completed six Base and six adapter rows, but all 12 failed requested-text WER and exact instruction-exclusive overlap was found post hoc in eight rows."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
+              "claim": "The epoch-12 PyTorch adapter and derived merged vLLM export completed three matched seeds, but both failed every content-faithfulness row and vLLM had higher mean WER, more repetition, longer output, and higher peak GPU allocation."
             }
           ],
           "boundary": "The negative results are bounded to the selected checkpoint, frozen prompts and seeds, retained reference, upstream route, and PyTorch environment. The blind emotion-obedience pack remains unrated."
@@ -106,6 +111,11 @@
               "level": "negative_result",
               "ref": "reports/matched-emotion-route-base-adapter-2026-08-13.md",
               "claim": "The corrected route produced complete objective evidence, universal WER failures, and post-hoc instruction-overlap attribution; it does not prove emotion obedience or adaptation benefit."
+            },
+            {
+              "level": "negative_result",
+              "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
+              "claim": "The matched runtime suite bound exact PyTorch artifacts and a derived vLLM export, completed objective, prosody, content, audio-identity, and blind-pack artifacts, and rejected a runtime-equivalence or quality promotion."
             }
           ],
           "boundary": "Corrected route execution is validated for this focused slice, but content fidelity is negative and no human ratings support emotion-obedience or perceptual claims."
@@ -119,7 +129,7 @@
               "claim": "The PyTorch lifecycle publishes a content-addressed package through a path, device, and inode-bound external retention contract."
             }
           ],
-          "boundary": "Dependency-free tests establish retention mechanics only. No real package, backup, restore, rights approval, or PyTorch-versus-vLLM equivalence report is recorded."
+          "boundary": "Dependency-free tests establish retention mechanics only. No real package, backup, restore, or rights approval is recorded. The matched PyTorch-versus-vLLM report is negative and does not establish equivalence."
         }
       }
     },
@@ -214,18 +224,23 @@
       "precision": "runtime default",
       "batching": true,
       "conformance": {
-        "status": "validated",
+        "status": "negative_result",
         "clean_checkout": true,
         "fresh_process": true,
         "prompt_count": 1,
-        "seed_count": 1,
-        "report": "README.md#vllm-inference-with-a-lora-checkpoint"
+        "seed_count": 3,
+        "report": "reports/matched-runtime-pytorch-vllm-2026-08-13.md"
       },
       "evidence": [
         {
           "level": "validated",
           "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
           "claim": "A merged-weight export and vLLM 0.15.1 inference were validated end to end on the recorded environment."
+        },
+        {
+          "level": "negative_result",
+          "ref": "reports/matched-runtime-pytorch-vllm-2026-08-13.md",
+          "claim": "The derived export completed three matched seeds faster than PyTorch, but failed every content row, had higher mean WER and repetition, and did not establish equivalence."
         }
       ]
     },
@@ -285,7 +300,7 @@
       "blockers": [
         "The one-pair long-form result requires preregistered multi-seed replication before estimating failure frequency.",
         "The corrected emotion-route blind listening ratings are incomplete.",
-        "PyTorch and merged-vLLM output equivalence remains untested."
+        "The matched PyTorch and derived merged-vLLM run failed content faithfulness for both candidates and did not establish equivalence; isolate adapter-to-merge drift from merged-model-to-runtime drift under a new frozen three-way plan."
       ]
     }
   },
@@ -303,6 +318,6 @@
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
-    "PyTorch and merged-vLLM output equivalence has not been assessed with the frozen listening suite."
+    "The first frozen PyTorch and merged-vLLM comparison completed but failed content faithfulness for both candidates. The derived export had higher mean WER, more repetition, longer output, and higher peak GPU allocation. A three-way adapter PyTorch, merged-weight PyTorch, and merged-weight vLLM comparison is still required to localize the drift."
   ]
 }

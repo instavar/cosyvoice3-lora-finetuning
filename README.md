@@ -401,6 +401,17 @@ perceptual winner. A separately labeled post-hoc evaluator 0.39 diagnostic found
 instruction-exclusive two-gram overlap in five Base rows and three adapter
 rows.
 
+The first preregistered epoch-12 PyTorch-versus-merged-vLLM run is documented in
+[`reports/matched-runtime-pytorch-vllm-2026-08-13.md`](reports/matched-runtime-pytorch-vllm-2026-08-13.md).
+Both runtimes completed all three seeds, and vLLM reduced mean generation time
+from 5.042185 to 2.754444 seconds. Both candidates nevertheless failed every
+content-faithfulness row. Mean requested-text WER was 0.505376 for PyTorch and
+0.774194 for vLLM, while vLLM used about 3.60 GB more peak GPU allocation and
+produced audio 5.49 seconds longer on average. The export is a derived artifact,
+all three matched WAV hashes differ, and the blind pack is unrated. The run is
+bounded negative conformance evidence, not runtime-equivalence or quality
+evidence.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
