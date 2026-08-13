@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Evidence
+
+- Record the preregistered same-conditioning unchanged Base and epoch-12
+  long-form comparison. Both modes executed, but both produced semantically
+  corrupted content and the adapter was materially worse on requested-text
+  WER. Keep this as a negative quality result.
+
 ### Bug fixes
 
 - Replace implicit YAML-stem checkpoint deletion with a two-phase, explicitly

@@ -2,7 +2,7 @@
 
 LoRA fine-tuning tools for [FunAudioLLM/CosyVoice](https://github.com/FunAudioLLM/CosyVoice) v3 (Fun-CosyVoice3-0.5B). Companion repo for single-speaker voice cloning on a 24GB consumer GPU.
 
-> **Status:** LoRA run completed. Best checkpoint at epoch 12 (CV loss 3.044). Standard PyTorch and merged-weight vLLM 0.15.1 inference were validated end to end on an RTX 3090 Ti on 2026-07-28. Perceptual quality ranking remains pending.
+> **Status:** LoRA run completed. Best checkpoint at epoch 12 (CV loss 3.044). Standard PyTorch and merged-weight vLLM 0.15.1 inference were validated end to end on an RTX 3090 Ti. A preregistered same-conditioning long-form run on 2026-08-13 was a negative quality result for both unchanged Base and epoch 12, with the adapter materially worse on requested-text WER. Perceptual ranking remains pending.
 
 ## Why this repo exists
 
@@ -378,6 +378,14 @@ row. They therefore do not establish an emotion-control failure. Rerun the six
 rows through the corrected route before making any claim about instruction
 obedience or the adapted checkpoint's emotion support.
 
+The first explicit matched Base-versus-adapter long-form run is documented in
+[`reports/matched-long-form-base-adapter-2026-08-13.md`](reports/matched-long-form-base-adapter-2026-08-13.md).
+Both candidates completed the runtime contract, but ASR exposed corrupted,
+repeated, and reference-derived content. Base WER was 0.281385 and epoch-12 WER
+was 0.515152 for the one frozen pair. This is bounded negative evidence. Valid
+audio, fast generation, or higher speaker similarity must not be reported as a
+quality success when requested-text faithfulness fails.
+
 ```bash
 # Generate the unchanged Base control. Base mode must be explicit.
 python tools/run_evaluation_suite.py \
@@ -540,7 +548,7 @@ At epochs 8-10, generating >10 second audio required 11-18 seed attempts. The mo
 
 | Model | Repo | Training | Result |
 |-------|------|----------|--------|
-| CosyVoice3 | This repo | LoRA | Best at epoch 12; quality eval pending |
+| CosyVoice3 | This repo | LoRA | Epoch 12 selected by CV loss; first matched long-form quality result negative |
 | Qwen3-TTS | [instavar/qwen3-tts-lora-finetuning](https://github.com/instavar/qwen3-tts-lora-finetuning) | LoRA | Production-ready (epoch 10, scale 0.3-0.35) |
 | IndexTTS2 | [instavar/indextts2-finetuning](https://github.com/instavar/indextts2-finetuning) | Full SFT | Production-ready (step 14000) |
 
