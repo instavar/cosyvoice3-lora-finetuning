@@ -10,8 +10,9 @@ This is a negative quality result, not a model promotion.
 The evaluator accepted the complete nine-metric objective contract and reported
 `proves_adaptation_benefit: false`. Basic WAV validity therefore did its job as
 a runtime check, but it did not establish semantic faithfulness. Faster-whisper
-found repetitions, omissions, garbling, and content from the retained reference
-transcript in the hypotheses. The adapted output also received higher ECAPA
+found repetitions, omissions, and garbling in both hypotheses, plus exact
+retained-reference transcript overlap in the Base hypothesis under the later
+post-hoc diagnostic. The adapted output also received higher ECAPA
 speaker similarity, which must not override its much worse requested-text WER.
 
 ## Frozen comparison
@@ -26,6 +27,8 @@ Hosted preregistration workflow `31669191246` passed at
 - evaluator at generation: `982367abc7837cb6da5ebb94192c9642dea62fce`
 - evaluator used for final unified validation:
   `d9c990522e166f22b1be4aa8bee770d7686af245` (version 0.36.0)
+- evaluator used for post-hoc content-faithfulness characterization:
+  `d9774ad79e127458ca06cf49003283c0272b950e` (version 0.37.0)
 - prompt: `cadence-two-minute`
 - seed: `20260812`
 - route for both candidates: `inference_zero_shot`
@@ -82,6 +85,30 @@ The objective matched output remained byte-identical when evaluator 0.36.0
 revalidated the observations after prosody extraction. Hosted evaluator main
 workflow `31670036671` passed at `2026-08-13T05:21:42Z`.
 
+## Post-hoc content-faithfulness characterization
+
+Evaluator 0.37.0 separately measured requested-text WER, repeated four-gram
+excess, and exact retained-reference transcript overlap. Its thresholds were
+selected after these outputs had already been inspected, so this is diagnostic
+characterization rather than preregistered confirmation.
+
+| Candidate | WER | Repeated excess fraction | Reference-exclusive hits | Result |
+|---|---:|---:|---:|---|
+| Base | 0.281385 | 0.099265 | 6 | high WER, repetition, and reference overlap |
+| Epoch 12 | 0.515152 | 0.117647 | 0 | high WER and repetition |
+
+The exact configured overlap rule therefore flagged Base, not epoch 12. Both
+candidates failed requested-text WER and repetition, and the adapter remained
+worse on both measures. This refines the earlier qualitative review without
+proving that epoch 12 is free from shorter, paraphrased, or ASR-hidden leakage.
+
+- content-faithfulness report file SHA-256:
+  `10d52d3b339d2943788512c53cc77ac29e3c4d4c9129fb5971fff4c5931996c8`
+- content-faithfulness report self SHA-256:
+  `7cb8aa323fcf14acc9377b4700f9ea18d8fa72a1b94e780026e1c42a9cf37e03`
+- hosted evaluator 0.37.0 main workflow:
+  `31671694637`, passed at `2026-08-13T05:50:38Z`
+
 ## Interpretation and limits
 
 The result generalizes only to this Base checkpoint, epoch-12 adapter, retained
@@ -112,9 +139,9 @@ failure.
 
 ## Follow-up
 
-- Add requested-text repetition and retained-reference leakage diagnostics to
-  the evaluator, with the two transcripts bound separately.
-- Replicate across preregistered seeds before estimating failure frequency.
+- Preregister the content-faithfulness thresholds and replicate them across
+  frozen seeds before estimating failure frequency. Keep requested-text
+  repetition and retained-reference overlap as separate diagnostics.
 - Rerun the full prompt suite through the corrected instruction route.
 - Keep speaker similarity, intelligibility, content faithfulness, prosody, and
   listening criteria separate. Do not collapse them into one score.
