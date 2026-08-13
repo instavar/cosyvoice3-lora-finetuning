@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +28,11 @@ class LifecycleBackendTests(unittest.TestCase):
         self.assertEqual(spec["schema_version"], "1.2.0")
         self.assertEqual(spec["capability_binding"]["adaptation"], "lora")
         self.assertEqual(spec["capability_binding"]["runtime_ids"], ["pytorch"])
+        required = {item["name"] for item in spec["required_environment"]}
+        self.assertIn("PERSISTED_PACKAGE_ROOT", required)
+        self.assertIn(
+            "package/persisted-package.json", spec["expected_artifacts"]["package"]
+        )
         for stage in ("preflight", "train", "infer", "evaluate", "package"):
             self.assertEqual(spec["commands"][stage][-1], stage)
 
@@ -77,7 +84,9 @@ class LifecycleBackendTests(unittest.TestCase):
                 audio = root / f"{split}.wav"
                 audio.write_bytes(b"audio")
                 manifest = root / f"{split}.jsonl"
-                manifest.write_text(json.dumps({"audio": str(audio), "text": split}) + "\n")
+                manifest.write_text(
+                    json.dumps({"audio": str(audio), "text": split}) + "\n"
+                )
                 raw[split] = manifest
             prepared_roots: dict[str, Path] = {}
             data_lists: dict[str, Path] = {}
@@ -91,7 +100,11 @@ class LifecycleBackendTests(unittest.TestCase):
                 prepared_roots[split] = prepared
                 data_lists[split] = data_list
             revision = subprocess.run(
-                ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True
+                ["git", "rev-parse", "HEAD"],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
             ).stdout.strip()
             receipt = root / "dataset-lineage.json"
             receipt.write_text(
@@ -107,7 +120,10 @@ class LifecycleBackendTests(unittest.TestCase):
                         },
                         outputs={
                             "prepared_train": (prepared_roots["train"], "tree"),
-                            "prepared_validation": (prepared_roots["validation"], "tree"),
+                            "prepared_validation": (
+                                prepared_roots["validation"],
+                                "tree",
+                            ),
                         },
                     )
                 )
@@ -193,6 +209,188 @@ class LifecycleBackendTests(unittest.TestCase):
                 {path.name for path in destination.iterdir()},
                 {"adapter_config.json", "adapter_model.safetensors"},
             )
+
+    def test_extract_rejects_traversal_duplicates_and_special_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            cases = {
+                "traversal": [("adapter/../escape.bin", b"escape", tarfile.REGTYPE)],
+                "duplicate": [
+                    ("adapter/model.safetensors", b"first", tarfile.REGTYPE),
+                    ("adapter/model.safetensors", b"second", tarfile.REGTYPE),
+                ],
+                "special": [("adapter/device", b"", tarfile.CHRTYPE)],
+                "sibling": [("notes.txt", b"notes", tarfile.REGTYPE)],
+            }
+            for name, entries in cases.items():
+                source = root / f"{name}.tar"
+                with tarfile.open(source, "w") as archive:
+                    for member_name, payload, member_type in entries:
+                        member = tarfile.TarInfo(member_name)
+                        member.type = member_type
+                        member.size = len(payload)
+                        archive.addfile(member, io.BytesIO(payload))
+                with (
+                    self.subTest(name=name),
+                    self.assertRaisesRegex(ValueError, "unsafe adapter archive member"),
+                ):
+                    LIFECYCLE._extract(source, root / f"reload-{name}")
+
+    def test_persist_package_is_content_addressed_and_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "package.tar"
+            source.write_bytes(b"immutable package")
+            store = root / "store"
+            store.mkdir()
+            first = LIFECYCLE._persist_package(source, store)
+            destination = Path(first["persisted_path"])
+            self.assertTrue(
+                destination.name.startswith("cosyvoice3-lora-package-sha256-")
+            )
+            self.assertEqual(destination.read_bytes(), source.read_bytes())
+            self.assertFalse(first["reused_existing"])
+            self.assertTrue(
+                LIFECYCLE._persist_package(source, store)["reused_existing"]
+            )
+            destination.write_bytes(b"tampered")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                LIFECYCLE._persist_package(source, store)
+
+    def test_package_root_is_bound_to_path_device_and_inode(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment, paths = self._persistence_fixture(root)
+            store = paths["store"]
+            identity = store.stat()
+            preflight = {
+                "persistent_package_root": str(store.resolve()),
+                "persistence_probe": {
+                    "device": identity.st_dev,
+                    "inode": identity.st_ino,
+                },
+            }
+            with patch.dict(os.environ, environment, clear=False):
+                self.assertEqual(
+                    LIFECYCLE._locked_persistent_package_root(preflight),
+                    store.resolve(),
+                )
+                store.rename(root / "retired-store")
+                store.mkdir()
+                self.assertEqual(store.stat().st_dev, identity.st_dev)
+                with self.assertRaisesRegex(ValueError, "changed after preflight"):
+                    LIFECYCLE._locked_persistent_package_root(preflight)
+
+    def test_persistent_package_root_rejects_each_immutable_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment, paths = self._persistence_fixture(root)
+            protected = {
+                "work": "lifecycle work directory",
+                "cosyvoice": "CosyVoice checkout",
+                "pretrained": "pretrained model directory",
+                "qwen": "Qwen dependency directory",
+                "prepared_train": "prepared training tree",
+                "prepared_validation": "prepared validation tree",
+                "base_dir": "base LLM checkpoint directory",
+            }
+            for key, message in protected.items():
+                candidate = paths[key] / "packages"
+                candidate.mkdir()
+                with (
+                    self.subTest(key=key),
+                    patch.dict(
+                        os.environ,
+                        {**environment, "PERSISTED_PACKAGE_ROOT": str(candidate)},
+                        clear=False,
+                    ),
+                    self.assertRaisesRegex(ValueError, message),
+                ):
+                    LIFECYCLE._persistent_package_root()
+
+    def test_package_stage_persists_archive_and_receipt(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            environment, paths = self._persistence_fixture(root)
+            work = paths["work"]
+            for path in (
+                work / "preflight",
+                work / "train",
+                work / "evaluate",
+                work / "infer",
+                work / "package",
+            ):
+                path.mkdir(parents=True, exist_ok=True)
+            identity = paths["store"].stat()
+            (work / "preflight" / "preflight.json").write_text(
+                json.dumps(
+                    {
+                        "persistent_package_root": str(paths["store"].resolve()),
+                        "persistence_probe": {
+                            "device": identity.st_dev,
+                            "inode": identity.st_ino,
+                        },
+                        "pretrained_model": {"sha256": "a" * 64},
+                        "base_llm_checkpoint_sha256": "b" * 64,
+                    }
+                )
+            )
+            (work / "train" / "selected-adapter.tar").write_bytes(b"adapter")
+            (work / "evaluate" / "evaluation-bundle.tar").write_bytes(b"evaluation")
+            (work / "infer" / "candidate.wav").write_bytes(b"wav")
+            controls = {}
+            for name in ("experiment", "plan", "lineage", "config"):
+                path = root / f"{name}.fixture"
+                path.write_bytes(name.encode())
+                controls[name] = path
+            environment.update(
+                {
+                    "INSTAVAR_VOICE_EXPERIMENT_MANIFEST": str(controls["experiment"]),
+                    "GENERATION_PLAN": str(controls["plan"]),
+                    "DATASET_LINEAGE": str(controls["lineage"]),
+                    "TRAIN_CONFIG": str(controls["config"]),
+                }
+            )
+            with patch.dict(os.environ, environment, clear=False):
+                LIFECYCLE._package()
+            package = work / "package" / "adapter-package.tar"
+            receipt = json.loads(
+                (work / "package" / "persisted-package.json").read_text()
+            )
+            self.assertEqual(
+                Path(receipt["persisted_path"]).read_bytes(), package.read_bytes()
+            )
+
+    @staticmethod
+    def _persistence_fixture(root: Path) -> tuple[dict[str, str], dict[str, Path]]:
+        paths = {
+            name: root / name
+            for name in (
+                "work",
+                "cosyvoice",
+                "pretrained",
+                "qwen",
+                "prepared_train",
+                "prepared_validation",
+                "base_dir",
+                "store",
+            )
+        }
+        for path in paths.values():
+            path.mkdir()
+        base_checkpoint = paths["base_dir"] / "llm.pt"
+        base_checkpoint.write_bytes(b"base")
+        environment = {
+            "INSTAVAR_VOICE_WORK_DIR": str(paths["work"]),
+            "COSYVOICE_DIR": str(paths["cosyvoice"]),
+            "PRETRAINED_DIR": str(paths["pretrained"]),
+            "QWEN_PRETRAIN_DIR": str(paths["qwen"]),
+            "PREPARED_TRAIN_ROOT": str(paths["prepared_train"]),
+            "PREPARED_VALIDATION_ROOT": str(paths["prepared_validation"]),
+            "BASE_LLM_CHECKPOINT": str(base_checkpoint),
+            "PERSISTED_PACKAGE_ROOT": str(paths["store"]),
+        }
+        return environment, paths
 
 
 if __name__ == "__main__":

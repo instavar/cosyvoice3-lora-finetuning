@@ -202,11 +202,22 @@ does not require it.
 The lifecycle audits grouped raw splits, writes model output under its unique
 work directory, promotes only one exact adapter directory, strips optimizer
 state from the inference package, reloads in a fresh process, runs the frozen
-evaluation plan, and packages provenance. Validate it with evaluator revision
+evaluation plan, packages provenance, and publishes the package under a
+content-addressed name to a preflighted external retention directory. Validate it with evaluator revision
 `8feadf7bbda75abe1c305c63e362c41b86451cda`. Use the companion tools directly;
 do not copy them into the external checkout, because unexpected checkout files
 fail provenance verification. A pass covers the PyTorch adapter path only. The
 merged vLLM path still requires a separate matched equivalence lifecycle.
+
+Set `PERSISTED_PACKAGE_ROOT` to an existing directory outside the work and
+source checkouts, pretrained and Qwen dependency directories, both prepared
+data trees, and the base LLM checkpoint directory. Preflight verifies fsynced
+no-overwrite hard-link publication and records the resolved path, filesystem
+device, and directory inode. Packaging rechecks that identity, reuses only a
+byte-identical object, and writes `package/persisted-package.json`. This is a
+dependency-free retention contract, not evidence of a real retained adapter,
+backup, restore, access control, rights approval, PyTorch-versus-vLLM
+equivalence, or defense against every adversarial filesystem race.
 
 ### Frozen multi-prompt runtime evaluation
 

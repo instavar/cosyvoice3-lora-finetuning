@@ -90,11 +90,11 @@
           "evidence": [
             {
               "level": "repository_declared",
-              "ref": "README.md#vllm-inference-with-a-lora-checkpoint",
-              "claim": "The repository documents a merged vLLM export path."
+              "ref": "README.md#executable-instavar-voice-lifecycle",
+              "claim": "The PyTorch lifecycle publishes a content-addressed package through a path, device, and inode-bound external retention contract."
             }
           ],
-          "boundary": "No immutable promoted package or PyTorch-versus-vLLM equivalence report is recorded."
+          "boundary": "Dependency-free tests establish retention mechanics only. No real package, backup, restore, rights approval, or PyTorch-versus-vLLM equivalence report is recorded."
         }
       }
     },
@@ -233,6 +233,7 @@
     "The PyTorch path returned invalid 0.04-second audio for both emotion-category texts at all three frozen seeds, but the historical runner ignored their instructions.",
     "The corrected inference_instruct2 route has contract-test coverage but no recorded real-model rerun.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
+    "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
     "PyTorch and merged-vLLM output equivalence has not been assessed with the frozen listening suite."
   ]
 }

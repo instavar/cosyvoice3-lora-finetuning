@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 REPO_ROOT = Path(__file__).parents[1]
@@ -38,6 +38,87 @@ def _work() -> Path:
     return _path("INSTAVAR_VOICE_WORK_DIR", directory=True)
 
 
+def _persistent_package_root() -> Path:
+    root = _path("PERSISTED_PACKAGE_ROOT", directory=True)
+    protected = {
+        "lifecycle work directory": _work(),
+        "repository checkout": REPO_ROOT.resolve(),
+        "CosyVoice checkout": _path("COSYVOICE_DIR", directory=True),
+        "pretrained model directory": _path("PRETRAINED_DIR", directory=True),
+        "Qwen dependency directory": _path("QWEN_PRETRAIN_DIR", directory=True),
+        "prepared training tree": _path("PREPARED_TRAIN_ROOT", directory=True),
+        "prepared validation tree": _path("PREPARED_VALIDATION_ROOT", directory=True),
+        "base LLM checkpoint directory": _path("BASE_LLM_CHECKPOINT").parent,
+    }
+    for label, path in protected.items():
+        if root == path or root.is_relative_to(path):
+            raise ValueError(f"PERSISTED_PACKAGE_ROOT must be outside the {label}")
+    return root
+
+
+def _fsync_directory(path: Path) -> None:
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _probe_persistent_package_root(root: Path) -> dict[str, Any]:
+    probe_path: Path | None = None
+    linked_path: Path | None = None
+    linked_created = False
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            dir=root,
+            prefix=".instavar-voice-persistence-probe.",
+            suffix=".partial",
+            delete=False,
+        ) as probe:
+            probe_path = Path(probe.name)
+            probe.write(b"instavar-voice-persistence-probe-v1\n")
+            probe.flush()
+            os.fsync(probe.fileno())
+        linked_path = probe_path.with_suffix(".linked")
+        os.link(probe_path, linked_path)
+        linked_created = True
+        _fsync_directory(root)
+        if linked_path.read_bytes() != probe_path.read_bytes():
+            raise ValueError(
+                "persistent package root failed its atomic publication probe"
+            )
+        identity = root.stat()
+        return {
+            "writable": True,
+            "atomic_hard_link": True,
+            "device": identity.st_dev,
+            "inode": identity.st_ino,
+        }
+    except OSError as error:
+        raise ValueError(
+            f"PERSISTED_PACKAGE_ROOT cannot publish an atomic package: {error}"
+        ) from error
+    finally:
+        if linked_path is not None and linked_created:
+            linked_path.unlink(missing_ok=True)
+        if probe_path is not None:
+            probe_path.unlink(missing_ok=True)
+
+
+def _locked_persistent_package_root(preflight: dict[str, Any]) -> Path:
+    root = _persistent_package_root()
+    probe = preflight.get("persistence_probe", {})
+    identity = root.stat()
+    if (
+        preflight.get("persistent_package_root") != str(root)
+        or probe.get("device") != identity.st_dev
+        or probe.get("inode") != identity.st_ino
+    ):
+        raise ValueError("PERSISTED_PACKAGE_ROOT changed after preflight")
+    return root
+
+
 def _write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -52,6 +133,62 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _verify_persisted_package(path: Path, expected_sha256: str) -> None:
+    if path.is_symlink() or not path.is_file() or path.stat().st_size == 0:
+        raise ValueError(f"persisted package is missing, empty, or unsafe: {path}")
+    actual_sha256 = _sha256(path)
+    if actual_sha256 != expected_sha256:
+        raise ValueError(
+            f"persisted package hash mismatch: expected {expected_sha256}, got {actual_sha256}"
+        )
+
+
+def _persist_package(source: Path, root: Path) -> dict[str, Any]:
+    if source.is_symlink() or not source.is_file() or source.stat().st_size == 0:
+        raise ValueError(f"package source is missing, empty, or unsafe: {source}")
+    if root.is_symlink() or not root.is_dir():
+        raise ValueError(f"persistent package root is missing or unsafe: {root}")
+    package_sha256 = _sha256(source)
+    destination = root / f"cosyvoice3-lora-package-sha256-{package_sha256}.tar"
+    reused_existing = destination.exists() or destination.is_symlink()
+    if reused_existing:
+        _verify_persisted_package(destination, package_sha256)
+    else:
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                dir=root,
+                prefix=f".{destination.name}.",
+                suffix=".partial",
+                delete=False,
+            ) as target:
+                temporary_path = Path(target.name)
+                with source.open("rb") as package:
+                    shutil.copyfileobj(package, target, length=1024 * 1024)
+                target.flush()
+                os.fsync(target.fileno())
+            _verify_persisted_package(temporary_path, package_sha256)
+            try:
+                os.link(temporary_path, destination)
+            except FileExistsError:
+                reused_existing = True
+            else:
+                _fsync_directory(root)
+            _verify_persisted_package(destination, package_sha256)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+    return {
+        "schema_version": "1.0.0",
+        "adaptation_mode": "lora",
+        "package_sha256": package_sha256,
+        "package_bytes": source.stat().st_size,
+        "persisted_path": str(destination),
+        "reused_existing": reused_existing,
+    }
 
 
 def _safe_name(value: str) -> str:
@@ -350,15 +487,20 @@ def _extract(source: Path, destination: Path) -> Path:
         members = archive.getmembers()
         if not members:
             raise ValueError("adapter archive is empty")
+        seen: set[str] = set()
         for member in members:
-            target = (destination / member.name).resolve()
+            member_path = PurePosixPath(member.name)
+            normalized = member_path.as_posix().rstrip("/")
             if (
-                not target.is_relative_to(destination.resolve())
-                or member.issym()
-                or member.islnk()
+                member_path.is_absolute()
+                or not member_path.parts
+                or member_path.parts[0] != "adapter"
+                or any(part in {"", ".", ".."} for part in member_path.parts)
+                or normalized in seen
                 or not (member.isfile() or member.isdir())
             ):
                 raise ValueError(f"unsafe adapter archive member: {member.name}")
+            seen.add(normalized)
         archive.extractall(destination, members=members, filter="data")
     adapter = destination / "adapter"
     if not adapter.is_dir() or not any(path.is_file() for path in adapter.rglob("*")):
@@ -476,6 +618,8 @@ def _preflight() -> None:
     pretrained = _path("PRETRAINED_DIR", directory=True)
     base_checkpoint = _path("BASE_LLM_CHECKPOINT")
     qwen_pretrain = _path("QWEN_PRETRAIN_DIR", directory=True)
+    persistent_package_root = _persistent_package_root()
+    persistence_probe = _probe_persistent_package_root(persistent_package_root)
     train_data, train_artifacts = _audit_data_list(_path("TRAIN_DATA_LIST"))
     cv_data, cv_artifacts = _audit_data_list(_path("CV_DATA_LIST"))
     overlap = sorted(str(path) for path in train_artifacts.intersection(cv_artifacts))
@@ -500,6 +644,8 @@ def _preflight() -> None:
             "selected_adapter_name": _safe_name(os.environ["SELECTED_ADAPTER_NAME"]),
             "training_config_sha256": _sha256(config),
             "base_llm_checkpoint_sha256": _sha256(base_checkpoint),
+            "persistent_package_root": str(persistent_package_root),
+            "persistence_probe": persistence_probe,
             "qwen_pretrain": _tree_manifest(qwen_pretrain),
             "pretrained_model": _tree_manifest(pretrained),
             "prepared_data": {"train": train_data, "cv": cv_data},
@@ -685,7 +831,10 @@ def _package() -> None:
             ),
         },
     )
-    _archive(staging, work / "package" / "adapter-package.tar", arcname="package")
+    package = work / "package" / "adapter-package.tar"
+    _archive(staging, package, arcname="package")
+    receipt = _persist_package(package, _locked_persistent_package_root(preflight))
+    _write_json(work / "package" / "persisted-package.json", receipt)
 
 
 def run(stage: str) -> None:
