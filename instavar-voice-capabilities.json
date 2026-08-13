@@ -3,7 +3,7 @@
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
-    "evidence_revision": "be453363b49a50d6e156e0f25c09fdb605b1298e"
+    "evidence_revision": "ced7619b4c46465fddf34644380337912f4e551a"
   },
   "model": {
     "family": "CosyVoice3",
