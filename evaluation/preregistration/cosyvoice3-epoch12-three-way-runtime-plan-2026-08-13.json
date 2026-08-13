@@ -1,0 +1,122 @@
+{
+  "candidate_ids": [
+    "cosyvoice3-epoch12-adapter-pytorch",
+    "cosyvoice3-epoch12-merged-pytorch",
+    "cosyvoice3-epoch12-merged-vllm"
+  ],
+  "generation_requirements": {
+    "frozen_generation_settings": true,
+    "record_failures_as_observations": true,
+    "same_transcripts": true
+  },
+  "prompt_count": 1,
+  "prompt_pack": {
+    "id": "instavar-singapore-english",
+    "sha256": "6d6750188abd6b8db83527158bf689ee138c65167a36ede17c62013bdc1279b1",
+    "version": "1.2.0"
+  },
+  "required_objective_metrics": [
+    "asr_word_error_rate",
+    "speaker_embedding_similarity",
+    "invalid_output_rate",
+    "duration_seconds",
+    "sample_rate_hz",
+    "silence_fraction",
+    "clipping_fraction",
+    "real_time_factor",
+    "peak_memory_bytes"
+  ],
+  "sample_count": 9,
+  "samples": [
+    {
+      "candidate_id": "cosyvoice3-epoch12-adapter-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-adapter-pytorch/neutral-brief/seed-42.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-adapter-pytorch--neutral-brief--seed-42",
+      "seed": 42,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-adapter-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-adapter-pytorch/neutral-brief/seed-314159.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-adapter-pytorch--neutral-brief--seed-314159",
+      "seed": 314159,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-adapter-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-adapter-pytorch/neutral-brief/seed-20260812.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-adapter-pytorch--neutral-brief--seed-20260812",
+      "seed": 20260812,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-pytorch/neutral-brief/seed-42.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-pytorch--neutral-brief--seed-42",
+      "seed": 42,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-pytorch/neutral-brief/seed-314159.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-pytorch--neutral-brief--seed-314159",
+      "seed": 314159,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-pytorch",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-pytorch/neutral-brief/seed-20260812.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-pytorch--neutral-brief--seed-20260812",
+      "seed": 20260812,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-vllm",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-vllm/neutral-brief/seed-42.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-vllm--neutral-brief--seed-42",
+      "seed": 42,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-vllm",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-vllm/neutral-brief/seed-314159.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-vllm--neutral-brief--seed-314159",
+      "seed": 314159,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    },
+    {
+      "candidate_id": "cosyvoice3-epoch12-merged-vllm",
+      "category": "neutral_singapore_english",
+      "expected_audio_path": "audio/cosyvoice3-epoch12-merged-vllm/neutral-brief/seed-20260812.wav",
+      "prompt_id": "neutral-brief",
+      "sample_id": "cosyvoice3-epoch12-merged-vllm--neutral-brief--seed-20260812",
+      "seed": 20260812,
+      "text": "I reviewed the notes this morning and found three details that need a little more attention. None of them is urgent, but I would like us to settle them before Friday."
+    }
+  ],
+  "schema_version": "1.1.0",
+  "seeds": [
+    42,
+    314159,
+    20260812
+  ],
+  "selected_prompt_ids": [
+    "neutral-brief"
+  ]
+}
