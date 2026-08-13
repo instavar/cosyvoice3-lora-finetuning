@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -40,6 +42,7 @@ class EvaluationSuiteContractTests(unittest.TestCase):
             "prompt_wav": str(self.prompt),
             "vllm_dir": None,
             "reuse_vllm_dir": False,
+            "merged_pytorch_dir": None,
         }
         values.update(overrides)
         return argparse.Namespace(**values)
@@ -120,6 +123,56 @@ class EvaluationSuiteContractTests(unittest.TestCase):
                 self.parser,
             )
 
+    def test_reloaded_merged_pytorch_requires_a_bound_artifact(self) -> None:
+        artifact = self.root / "merged-pytorch"
+        artifact.mkdir()
+        weights = artifact / "merged_model.safetensors"
+        weights.write_bytes(b"merged weights")
+        digest = hashlib.sha256(weights.read_bytes()).hexdigest()
+        (artifact / "instavar-merged-pytorch.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "1.0.0",
+                    "format": "safetensors_model_state_v1",
+                    "model_class": "fixture.Model",
+                    "exporter_revision": "a" * 40,
+                    "source_adapter_sha256": "b" * 64,
+                    "weights": {
+                        "path": "merged_model.safetensors",
+                        "sha256": digest,
+                        "bytes": weights.stat().st_size,
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        reloaded = self.args(
+            "reloaded-merged-pytorch",
+            merged_pytorch_dir=str(artifact),
+        )
+        self.assertEqual(
+            resolve_inference_mode(reloaded, self.parser),
+            "reloaded-merged-pytorch",
+        )
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(
+                self.args("reloaded-merged-pytorch"),
+                self.parser,
+            )
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(
+                self.args(
+                    "reloaded-merged-pytorch",
+                    lora_dir=str(self.adapter),
+                    merged_pytorch_dir=str(artifact),
+                ),
+                self.parser,
+            )
+        weights.write_bytes(b"tampered")
+        with self.assertRaises(SystemExit):
+            resolve_inference_mode(reloaded, self.parser)
+
     def test_missing_base_asset_and_symlinked_prompt_fail_closed(self) -> None:
         (self.base / "llm.pt").unlink()
         with self.assertRaises(SystemExit):
@@ -137,16 +190,13 @@ class EvaluationSuiteContractTests(unittest.TestCase):
             encoding="utf-8"
         )
         ast.parse(source)
+        self.assertIn('"reloaded-merged-pytorch"', source)
         self.assertIn(
-            'choices=("base", "adapter", "merged-pytorch", "merged-vllm")',
-            source,
-        )
-        self.assertIn(
-            'if args.inference_mode != "base":\n'
+            'if args.inference_mode in {"adapter", "merged-pytorch", "merged-vllm"}:\n'
             "        from infer_cosyvoice3_lora import",
             source,
         )
-        self.assertIn('if args.inference_mode != "base"', source)
+        self.assertIn("load_merged_pytorch_artifact", source)
         self.assertIn('"artifact_mode": artifact_mode', source)
         self.assertIn('f"cosyvoice3_pytorch_{device_family}_{artifact_mode}"', source)
         self.assertIn('args.inference_mode == "merged-pytorch"', source)
@@ -162,6 +212,21 @@ class EvaluationSuiteContractTests(unittest.TestCase):
         ast.parse(source)
         self.assertIn("BackgroundThreadFailureCapture", source)
         self.assertIn("preserved invalid output", source)
+
+    def test_persisted_merged_export_uses_safetensors_and_no_overwrite(self) -> None:
+        artifact_source = (ROOT / "tools" / "merged_pytorch_artifact.py").read_text(
+            encoding="utf-8"
+        )
+        exporter_source = (
+            ROOT / "tools" / "export_cosyvoice3_merged_pytorch.py"
+        ).read_text(encoding="utf-8")
+        ast.parse(artifact_source)
+        ast.parse(exporter_source)
+        self.assertIn("from safetensors.torch import save_model", artifact_source)
+        self.assertIn("from safetensors.torch import load_model", artifact_source)
+        self.assertIn("os.path.lexists(output_dir)", artifact_source)
+        self.assertIn("validate_merged_pytorch_artifact", artifact_source)
+        self.assertIn("merge_lora_into_cosyvoice3", exporter_source)
 
 
 if __name__ == "__main__":

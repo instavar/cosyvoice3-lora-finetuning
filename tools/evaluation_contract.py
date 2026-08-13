@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from merged_pytorch_artifact import validate_merged_pytorch_artifact
+
 
 BASE_ASSETS = ("cosyvoice3.yaml", "llm.pt", "flow.pt", "hift.pt")
 ADAPTER_ASSETS = ("adapter_config.json", "adapter_model.safetensors")
@@ -30,9 +32,16 @@ def resolve_inference_mode(
             mode = "adapter"
         else:
             parser.error("base evaluation requires explicit --inference-mode base")
-    if mode not in {"base", "adapter", "merged-pytorch", "merged-vllm"}:
+    if mode not in {
+        "base",
+        "adapter",
+        "merged-pytorch",
+        "reloaded-merged-pytorch",
+        "merged-vllm",
+    }:
         parser.error(
-            "inference mode must be base, adapter, merged-pytorch, or merged-vllm"
+            "inference mode must be base, adapter, merged-pytorch, "
+            "reloaded-merged-pytorch, or merged-vllm"
         )
 
     pretrained = Path(args.pretrained_dir)
@@ -48,10 +57,30 @@ def resolve_inference_mode(
         parser.error("prompt WAV must be an existing file")
 
     if mode == "base":
+        if (
+            args.lora_dir
+            or args.vllm_dir
+            or args.reuse_vllm_dir
+            or args.merged_pytorch_dir
+        ):
+            parser.error(
+                "base mode forbids adapted and merged artifact arguments"
+            )
+        return mode
+
+    if mode == "reloaded-merged-pytorch":
         if args.lora_dir or args.vllm_dir or args.reuse_vllm_dir:
             parser.error(
-                "base mode forbids --lora-dir, --vllm-dir, and --reuse-vllm-dir"
+                "reloaded-merged-pytorch mode accepts only --merged-pytorch-dir"
             )
+        if not args.merged_pytorch_dir:
+            parser.error(
+                "reloaded-merged-pytorch mode requires --merged-pytorch-dir"
+            )
+        try:
+            validate_merged_pytorch_artifact(Path(args.merged_pytorch_dir))
+        except (OSError, RuntimeError, ValueError) as error:
+            parser.error(str(error))
         return mode
 
     if not args.lora_dir:
@@ -62,9 +91,12 @@ def resolve_inference_mode(
         parser.error(str(error))
 
     if mode in {"adapter", "merged-pytorch"}:
-        if args.vllm_dir or args.reuse_vllm_dir:
-            parser.error(f"{mode} mode forbids --vllm-dir and --reuse-vllm-dir")
+        if args.vllm_dir or args.reuse_vllm_dir or args.merged_pytorch_dir:
+            parser.error(f"{mode} mode forbids other merged artifact arguments")
         return mode
+
+    if args.merged_pytorch_dir:
+        parser.error("merged-vllm mode forbids --merged-pytorch-dir")
 
     if not args.vllm_dir:
         parser.error("merged-vllm mode requires --vllm-dir")

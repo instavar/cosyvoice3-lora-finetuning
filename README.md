@@ -462,6 +462,40 @@ vLLM under one new frozen plan to distinguish merge drift from runtime drift.
 The merged-PyTorch path has model-free contract coverage only until a real
 frozen GPU run is recorded.
 
+To separate in-memory merging from serialized-artifact reload, export a
+pickle-free merged PyTorch state once, then evaluate it in a fresh process:
+
+```bash
+python tools/export_cosyvoice3_merged_pytorch.py \
+  --cosyvoice-dir /path/to/CosyVoice \
+  --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+  --lora-dir exp/female01/cosyvoice3/llm/lora/epoch_12 \
+  --output-dir evaluation/artifacts/epoch12-merged-pytorch \
+  --exporter-revision "$(git rev-parse HEAD)" \
+  --source-adapter-sha256 <exact-adapter-tree-sha256>
+
+python tools/run_evaluation_suite.py \
+  --cosyvoice-dir /path/to/CosyVoice \
+  --pretrained-dir pretrained_models/Fun-CosyVoice3-0.5B \
+  --inference-mode reloaded-merged-pytorch \
+  --merged-pytorch-dir evaluation/artifacts/epoch12-merged-pytorch \
+  --prompt-wav /path/to/reference.wav \
+  --prompt-text "The exact reference transcript." \
+  --generation-plan evaluation/generation-plan.json \
+  --candidate-id cosyvoice3-epoch12-reloaded-merged-pytorch \
+  --runtime-id pytorch-merged-reloaded \
+  --output-dir evaluation/cosyvoice3-epoch12-reloaded-merged-pytorch
+```
+
+The exporter writes safetensors plus a bounded JSON manifest through a new
+staging directory and refuses an existing destination. Reload verifies schema,
+source-adapter identity, file size, SHA-256, non-symlink paths, and stable file
+and directory identity before generation. The manifest is capped at 1 MiB.
+This binds the persisted bytes but does not prove loader honesty, numerical or
+perceptual equivalence, or TTS quality. Bind the exported directory as a
+derived runtime artifact set in the shared evaluator before comparing it with
+other runtimes.
+
 The early-stop option now synchronizes its decision across all initialized
 training ranks with an all-reduce before any rank leaves the epoch loop. Run
 the bounded control-plane smoke with:

@@ -251,6 +251,32 @@
       "notes": "The route is executed and diagnostically useful. Content conformance remains negative, and no persistent post-merge artifact binding exists."
     },
     {
+      "id": "pytorch_merged_reloaded",
+      "status": "experimental",
+      "artifact_mode": "merged",
+      "streaming": true,
+      "profile": "experimental",
+      "device": "cuda",
+      "interface": "cli",
+      "precision": "runtime default",
+      "batching": false,
+      "conformance": {
+        "status": "not_run",
+        "clean_checkout": false,
+        "fresh_process": false,
+        "prompt_count": 0,
+        "seed_count": 0
+      },
+      "evidence": [
+        {
+          "level": "repository_declared",
+          "ref": "README.md#frozen-multi-prompt-runtime-evaluation",
+          "claim": "The companion can persist merged LLM state as content-bound safetensors and reload it into the pretrained PyTorch architecture in a separate process."
+        }
+      ],
+      "notes": "The artifact contract has model-free and small-model safetensors coverage. Real CosyVoice3 export and fresh-process generation remain unrun."
+    },
+    {
       "id": "vllm",
       "status": "supported",
       "artifact_mode": "merged",
