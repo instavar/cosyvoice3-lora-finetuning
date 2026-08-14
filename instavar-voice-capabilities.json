@@ -3,7 +3,7 @@
   "repository": {
     "slug": "instavar/cosyvoice3-lora-finetuning",
     "url": "https://github.com/instavar/cosyvoice3-lora-finetuning",
-    "evidence_revision": "076d13f2ea5b608b3c4217158e68f0b1ea44f63f"
+    "evidence_revision": "a9cba1bb8481daa7871f397bf6d26ffb9e0f1c7b"
   },
   "model": {
     "family": "CosyVoice3",
@@ -53,9 +53,14 @@
               "level": "repository_declared",
               "ref": "reports/resume-evaluator-045-instrumentation-2026-08-14.md",
               "claim": "Future checkpoints expose independent model, optimizer, scheduler, trainer, and RNG files for evaluator 0.45 while preserving legacy loading."
+            },
+            {
+              "level": "validated",
+              "ref": "reports/resume-live-conditioned-gpu-2026-08-14.md",
+              "claim": "A live interrupted-resumed CosyVoice3 LoRA run matched an uninterrupted run byte for byte across all five evaluator 0.45 checkpoint roles under four rehashed conditioning identities."
             }
           ],
-          "boundary": "Historical checkpoint preservation does not validate the new resume contract or establish merged-runtime equivalence."
+          "boundary": "The live pair covers single-process, single-GPU, one-row, two-update LoRA continuation only. It does not establish merged-runtime or model-quality equivalence."
         },
         "fresh_process_reload": {
           "status": "validated",
@@ -64,6 +69,11 @@
               "level": "validated",
               "ref": "reports/runtime-smoke-2026-08-12.md",
               "claim": "The selected adapter loaded in the recorded PyTorch runtime."
+            },
+            {
+              "level": "validated",
+              "ref": "reports/resume-live-conditioned-gpu-2026-08-14.md",
+              "claim": "A fresh process restored a guarded epoch checkpoint after an observed SIGTERM and reached the same byte-exact five-role final artifact set as uninterrupted training."
             }
           ],
           "boundary": "The merged vLLM export completed a matched three-seed comparison, but both runtimes failed content faithfulness and the derived export did not establish equivalence."
@@ -449,8 +459,7 @@
     "The first explicit same-conditioning long-form run produced semantically corrupted content for both Base and epoch 12. The post-hoc evaluator 0.37 diagnostics flagged high WER and repetition for both, plus exact retained-reference overlap for Base only; preregister the thresholds and replicate across frozen seeds.",
     "The corrected inference_instruct2 run produced valid WAVs but universal requested-text WER failure and frequent post-hoc exact instruction overlap; test any frontend or instruction rewrite under a new frozen plan.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
-    "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
-    "Existing resume evidence predates evaluator 0.45 live-conditioning receipts; a fresh paired run is required for the stronger byte-exact claim tier.",
+    "Live guarded continuation is validated only for a single-process, single-GPU, one-row, two-update LoRA slice; broader datasets, longer horizons, and sampler order remain unverified.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
     "The 18-row split-boundary probe showed that the earlier request-seed association follows frontend request boundaries rather than text length alone. Test a per-utterance seed schedule and reset policy only after selecting a checkpoint that passes the content gate."

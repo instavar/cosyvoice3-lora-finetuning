@@ -230,7 +230,9 @@ torchrun --standalone --nnodes=1 --nproc_per_node=1 \
   --max_epoch 20 \
   --learning_rate 1e-5 \
   --guarded-checkpoints \
-  --trust-model-checkpoint
+  --trust-model-checkpoint \
+  --seed 1234 \
+  --deterministic
 ```
 
 Resume from the exact newest guarded directory, not from an inference-only
@@ -261,10 +263,12 @@ copies still resume under their original sidecar authority.
 
 `evaluator_lora_artifact_paths(...)` rechecks the sidecar-bound live bytes and
 rejects missing decomposed state, ambiguous model files, and cross-role
-hardlinks. This instrumentation does not upgrade existing training or quality
-evidence. A fresh run pair must bind live Base, lineage, controls, and initial
-state through schema 1.1 receipts before outcome inspection. See
+hardlinks. The instrumentation contract is described in
 [`reports/resume-evaluator-045-instrumentation-2026-08-14.md`](reports/resume-evaluator-045-instrumentation-2026-08-14.md).
+A fresh real-model run pair now binds live Base, lineage, controls, and initial
+state through schema 1.1 receipts. The interrupted-resumed run is byte-identical
+to the uninterrupted run for all five declared final roles. See
+[`reports/resume-live-conditioned-gpu-2026-08-14.md`](reports/resume-live-conditioned-gpu-2026-08-14.md).
 
 The selected directory must be the newest owned guarded checkpoint. Changed
 bytes, changed inputs, terminal symlinks, unowned numeric siblings, a completed
@@ -280,9 +284,9 @@ per-rank model partitions, optimizer state, scaler and RNG state, sampler
 position, failure agreement, and collective publication. Data-loader workers
 are also rejected because worker RNG and iterator state are not persisted.
 
-This is repository-declared and dependency-free evidence. No real CosyVoice
-model, GPU, optimizer, interrupted process, numerical continuation comparison,
-new audio, or listening test ran for this implementation.
+The live comparison validates a bounded single-GPU, single-process, one-row,
+two-update continuation. It does not validate model quality, arbitrary dataset
+orders, data-loader workers, multi-rank DDP, or DeepSpeed continuation.
 
 ### Review legacy DeepSpeed pruning before deletion
 
