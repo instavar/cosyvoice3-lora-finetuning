@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from tools.cosyvoice_resume_contract import (
+    INITIAL_ADAPTER_NAME,
     LOCK_NAME,
     OPTIMIZER_STATE_NAME,
     ResumeContractError,
@@ -16,8 +17,10 @@ from tools.cosyvoice_resume_contract import (
     checkpoint_children,
     epoch_checkpoint_name,
     evaluator_lora_artifact_paths,
+    initial_adapter_identity,
     prune_owned_checkpoints,
     publish_checkpoint,
+    publish_initial_adapter,
     require_fresh_output,
     resolve_checkpoint,
     validate_checkpoint,
@@ -53,7 +56,9 @@ class ResumeContractTests(unittest.TestCase):
         listing.write_text(str(artifact) + "\n", encoding="utf-8")
         return listing, artifact
 
-    def _contract(self, *, max_epoch: int = 5) -> dict:
+    def _contract(
+        self, *, max_epoch: int = 5, initial_adapter: Path | None = None
+    ) -> dict:
         return build_contract(
             output_dir=self.output,
             base_checkpoint=self.base,
@@ -66,6 +71,7 @@ class ResumeContractTests(unittest.TestCase):
             source_files=[self.source],
             training_config={"max_epoch": max_epoch, "train_engine": "torch_ddp"},
             runtime={"python": "fixture", "world_size": 1},
+            initial_adapter=initial_adapter,
         )
 
     @staticmethod
@@ -115,6 +121,89 @@ class ResumeContractTests(unittest.TestCase):
         self.assertEqual(selected, checkpoint)
         self.assertEqual(state["completed_epoch"], 1)
         self.assertEqual(state["monitor_state"]["cv_no_improve_epochs"], 1)
+
+    def test_initial_adapter_is_atomic_and_contract_bound(self) -> None:
+        initial = publish_initial_adapter(
+            output_dir=self.output,
+            adapter_saver=self._adapter_saver,
+        )
+        self.assertEqual(initial.name, INITIAL_ADAPTER_NAME)
+        identity = initial_adapter_identity(initial)
+        self.assertEqual(identity["path"], str(initial))
+        contract = build_contract(
+            output_dir=self.output,
+            base_checkpoint=self.base,
+            config_file=self.config,
+            qwen_pretrain=self.qwen,
+            data_files={
+                "train": [self.train_list, self.train_data],
+                "cross_validation": [self.cv_list, self.cv_data],
+            },
+            source_files=[self.source],
+            training_config={"max_epoch": 5, "train_engine": "torch_ddp"},
+            runtime={"python": "fixture", "world_size": 1},
+            initial_adapter=initial,
+        )
+        self.assertEqual(
+            contract["initial_adapter"]["files"], identity["files"]
+        )
+        self.assertFalse(
+            any(
+                item.name.startswith(f".{INITIAL_ADAPTER_NAME}.")
+                for item in self.output.iterdir()
+            )
+        )
+
+    def test_initial_adapter_rejects_adoption_ambiguity_and_drift(self) -> None:
+        initial = publish_initial_adapter(
+            output_dir=self.output,
+            adapter_saver=self._adapter_saver,
+        )
+        with self.assertRaisesRegex(ResumeContractError, "overwrite or adopt"):
+            publish_initial_adapter(
+                output_dir=self.output,
+                adapter_saver=self._adapter_saver,
+            )
+        (initial / "adapter_model.bin").write_bytes(b"ambiguous")
+        with self.assertRaisesRegex(ResumeContractError, "ambiguous"):
+            initial_adapter_identity(initial)
+
+    def test_initial_adapter_mutation_breaks_resume_contract(self) -> None:
+        initial = publish_initial_adapter(
+            output_dir=self.output,
+            adapter_saver=self._adapter_saver,
+        )
+        contract = self._contract(initial_adapter=initial)
+        checkpoint = self._checkpoint(1, contract=contract)
+        (initial / "adapter_model.safetensors").write_bytes(b"changed")
+        changed_contract = self._contract(initial_adapter=initial)
+        with self.assertRaisesRegex(ResumeContractError, "contract drift"):
+            validate_checkpoint(
+                checkpoint,
+                output_dir=self.output,
+                expected_contract=changed_contract,
+                trust_resume_state=True,
+                world_size=1,
+                train_engine="torch_ddp",
+            )
+
+    def test_failed_initial_adapter_publication_cleans_only_its_partial(self) -> None:
+        protected = self.output / "keep.txt"
+        protected.write_text("keep\n", encoding="utf-8")
+
+        def fail(directory: Path) -> None:
+            (directory / "partial.txt").write_text("partial\n", encoding="utf-8")
+            raise RuntimeError("fixture failure")
+
+        with self.assertRaisesRegex(RuntimeError, "fixture failure"):
+            publish_initial_adapter(output_dir=self.output, adapter_saver=fail)
+        self.assertEqual(protected.read_text(encoding="utf-8"), "keep\n")
+        self.assertFalse(
+            any(
+                item.name.startswith(f".{INITIAL_ADAPTER_NAME}.")
+                for item in self.output.iterdir()
+            )
+        )
 
     def test_evaluator_lora_artifact_roles_are_independent(self) -> None:
         checkpoint = self._checkpoint(1)

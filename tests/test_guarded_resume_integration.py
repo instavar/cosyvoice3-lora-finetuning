@@ -19,6 +19,8 @@ class GuardedResumeIntegrationTests(unittest.TestCase):
             "--trust-resume-state",
             "--trust-model-checkpoint",
             "--resume-keep-last",
+            "--seed",
+            "--deterministic",
         ):
             self.assertIn(flag, source)
         self.assertIn("adapter-only warm start", source)
@@ -39,9 +41,9 @@ class GuardedResumeIntegrationTests(unittest.TestCase):
             encoding="utf-8"
         )
         for token in (
-            '"optimizer": optimizer.state_dict()',
-            '"scheduler": scheduler.state_dict()',
-            '"scaler": scaler.state_dict()',
+            '"optimizer": canonicalize_state(optimizer.state_dict())',
+            '"scheduler": canonicalize_state(scheduler.state_dict())',
+            "canonicalize_state(scaler.state_dict())",
             '"python_rng": random.getstate()',
             '"numpy_rng": np.random.get_state()',
             '"torch_rng": torch.get_rng_state()',
@@ -52,6 +54,51 @@ class GuardedResumeIntegrationTests(unittest.TestCase):
             'torch.cuda.set_rng_state_all(state["cuda_rng"])',
         ):
             self.assertIn(token, source)
+
+    def test_runtime_evidence_canonicalizes_tensor_storage(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("def canonicalize_state(value):", source)
+        self.assertIn('.to(device="cpu").contiguous().clone()', source)
+        self.assertIn(
+            '"optimizer": canonicalize_state(optimizer.state_dict())', source
+        )
+        self.assertIn(
+            '"scheduler": canonicalize_state(scheduler.state_dict())', source
+        )
+
+    def test_deterministic_controls_are_bound_before_training(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        main = source[source.index("def main():") :]
+        configure = main.index("configure_reproducibility(args)")
+        config_load = main.index("load_hyperpyyaml(")
+        self.assertLess(configure, config_load)
+        for token in (
+            'os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"',
+            "torch.use_deterministic_algorithms(True)",
+            "torch.backends.cuda.matmul.allow_tf32 = False",
+            "torch.backends.cudnn.allow_tf32 = False",
+            "torch.backends.cudnn.benchmark = False",
+            "torch.backends.cudnn.deterministic = True",
+            '"seed": args.seed',
+            '"deterministic": args.deterministic',
+        ):
+            self.assertIn(token, source)
+
+    def test_fresh_guarded_run_publishes_bound_initial_adapter(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        publish = source.index("initial_adapter = publish_initial_adapter(")
+        contract = source.index(
+            "contract = guarded_contract(args, configs, initial_adapter)", publish
+        )
+        wrap = source.index("model = wrap_cuda_model(args, model)")
+        self.assertLess(publish, contract)
+        self.assertLess(contract, wrap)
 
     def test_monitor_state_preserves_early_stop_history(self) -> None:
         source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
@@ -104,6 +151,8 @@ class GuardedResumeIntegrationTests(unittest.TestCase):
         self.assertIn(
             '["--resume-from", settings["RESUME_FROM"], "--trust-resume-state"]', source
         )
+        self.assertIn('"--seed",\n        settings["TRAIN_SEED"]', source)
+        self.assertIn('if settings["DETERMINISTIC"] == "1":', source)
 
     def test_training_script_remains_valid_python(self) -> None:
         source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(

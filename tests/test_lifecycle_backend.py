@@ -154,6 +154,16 @@ class LifecycleBackendTests(unittest.TestCase):
             self.assertRaises(ValueError),
         ):
             LIFECYCLE._training_settings()
+        for environment in (
+            {"TRAIN_SEED": "-1"},
+            {"TRAIN_SEED": str(2**63)},
+            {"DETERMINISTIC": "true"},
+        ):
+            with (
+                patch.dict(os.environ, environment, clear=False),
+                self.assertRaises(ValueError),
+            ):
+                LIFECYCLE._training_settings()
         with (
             patch.dict(os.environ, {"USE_AMP": "yes"}, clear=False),
             self.assertRaises(ValueError),

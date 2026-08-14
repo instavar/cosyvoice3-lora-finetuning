@@ -23,6 +23,7 @@ from torch.distributed.elastic.multiprocessing.errors import record
 
 from distributed_early_stop import synchronize_early_stop
 from cosyvoice_resume_contract import (
+    INITIAL_ADAPTER_NAME,
     OPTIMIZER_STATE_NAME,
     ResumeContractError,
     SCHEDULER_STATE_NAME,
@@ -30,6 +31,7 @@ from cosyvoice_resume_contract import (
     build_contract,
     prune_owned_checkpoints,
     publish_checkpoint,
+    publish_initial_adapter,
     require_fresh_output,
     validate_checkpoint,
 )
@@ -101,7 +103,7 @@ def data_list_files(path: str) -> list[Path]:
     return files
 
 
-def guarded_contract(args, configs) -> dict:
+def guarded_contract(args, configs, initial_adapter: Path) -> dict:
     source_root = Path(__file__).resolve().parent
     train_conf = configs["train_conf"]
     training_config = {
@@ -115,6 +117,13 @@ def guarded_contract(args, configs) -> dict:
         "early_stop_on_cv_overfit": args.early_stop_on_cv_overfit,
         "resume_keep_last": args.resume_keep_last,
         "timeout": args.timeout,
+        "seed": args.seed,
+        "deterministic": args.deterministic,
+        "cublas_workspace_config": (
+            os.environ.get("CUBLAS_WORKSPACE_CONFIG")
+            if args.deterministic
+            else None
+        ),
         "optim": train_conf.get("optim"),
         "optim_conf": train_conf.get("optim_conf"),
         "scheduler": train_conf.get("scheduler"),
@@ -170,6 +179,7 @@ def guarded_contract(args, configs) -> dict:
         ),
         training_config=training_config,
         runtime=runtime,
+        initial_adapter=initial_adapter,
     )
 
 
@@ -193,11 +203,27 @@ def monitor_state(info_dict: dict) -> dict:
     return state
 
 
+def canonicalize_state(value):
+    if isinstance(value, torch.Tensor):
+        return value.detach().to(device="cpu").contiguous().clone()
+    if isinstance(value, np.ndarray):
+        return np.ascontiguousarray(value).copy()
+    if isinstance(value, dict):
+        return {key: canonicalize_state(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [canonicalize_state(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(canonicalize_state(item) for item in value)
+    return deepcopy(value)
+
+
 def save_runtime_state(path: Path, optimizer, scheduler, scaler) -> None:
     state = {
-        "optimizer": optimizer.state_dict(),
-        "scheduler": scheduler.state_dict(),
-        "scaler": scaler.state_dict() if scaler is not None else None,
+        "optimizer": canonicalize_state(optimizer.state_dict()),
+        "scheduler": canonicalize_state(scheduler.state_dict()),
+        "scaler": (
+            canonicalize_state(scaler.state_dict()) if scaler is not None else None
+        ),
         "python_rng": random.getstate(),
         "numpy_rng": np.random.get_state(),
         "torch_rng": torch.get_rng_state(),
@@ -212,6 +238,28 @@ def save_runtime_state(path: Path, optimizer, scheduler, scaler) -> None:
         torch.save(value, output)
         with output.open("rb") as handle:
             os.fsync(handle.fileno())
+
+
+def configure_reproducibility(args) -> None:
+    if args.seed < 0 or args.seed > 2**63 - 1:
+        raise ValueError("--seed must be between 0 and 2^63 - 1")
+    if args.deterministic:
+        workspace = os.environ.get("CUBLAS_WORKSPACE_CONFIG")
+        if workspace not in {None, ":4096:8"}:
+            raise ValueError(
+                "Deterministic mode requires CUBLAS_WORKSPACE_CONFIG=:4096:8"
+            )
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+    random.seed(args.seed)
+    np.random.seed(args.seed % 2**32)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
 
 def restore_runtime_state(path: Path, optimizer, scheduler, scaler) -> None:
@@ -289,6 +337,18 @@ def get_args():
         type=float,
         default=None,
         help="Explicitly override train_conf.optim_conf.lr after loading the full model config",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=1234,
+        help="Training seed bound into guarded continuation state",
+    )
+    parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        default=False,
+        help="Enable strict deterministic CUDA controls for byte-exact evidence",
     )
     parser.add_argument(
         "--ddp.dist_backend",
@@ -552,6 +612,7 @@ def main():
     logging.basicConfig(
         level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s"
     )
+    configure_reproducibility(args)
 
     if args.model != "llm":
         raise RuntimeError("LoRA script expects --model llm (CosyVoice3 LLM).")
@@ -619,18 +680,18 @@ def main():
         init_dataset_and_dataloader(args, configs, gan, args.dpo)
     )
     configs = check_modify_and_save_config(args, configs)
-    if guarded:
-        contract = guarded_contract(args, configs)
-        if args.resume_from:
-            resume_checkpoint, resume_state = validate_checkpoint(
-                args.resume_from,
-                output_dir=args.model_dir,
-                expected_contract=contract,
-                trust_resume_state=args.trust_resume_state,
-                world_size=dist.get_world_size(),
-                train_engine=args.train_engine,
-            )
-            args.lora_checkpoint = str(resume_checkpoint)
+    if guarded and args.resume_from:
+        initial_adapter = Path(args.model_dir) / INITIAL_ADAPTER_NAME
+        contract = guarded_contract(args, configs, initial_adapter)
+        resume_checkpoint, resume_state = validate_checkpoint(
+            args.resume_from,
+            output_dir=args.model_dir,
+            expected_contract=contract,
+            trust_resume_state=args.trust_resume_state,
+            world_size=dist.get_world_size(),
+            train_engine=args.train_engine,
+        )
+        args.lora_checkpoint = str(resume_checkpoint)
     writer = init_summarywriter(args)
 
     # build model
@@ -652,6 +713,13 @@ def main():
     freeze_all_params(model)
     peft_model = apply_lora_to_cosyvoice3(model, args)
     unfreeze_by_prefix(model, parse_list(args.lora_unfreeze))
+
+    if guarded and resume_checkpoint is None:
+        initial_adapter = publish_initial_adapter(
+            output_dir=args.model_dir,
+            adapter_saver=peft_model.save_pretrained,
+        )
+        contract = guarded_contract(args, configs, initial_adapter)
 
     try:
         peft_model.print_trainable_parameters()

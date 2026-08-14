@@ -534,6 +534,8 @@ def _training_settings() -> dict[str, str]:
         "FP16": os.environ.get("FP16", "0"),
         "RESUME_FROM": os.environ.get("RESUME_FROM", ""),
         "TRUST_RESUME_STATE": os.environ.get("TRUST_RESUME_STATE", "0"),
+        "TRAIN_SEED": os.environ.get("TRAIN_SEED", "1234"),
+        "DETERMINISTIC": os.environ.get("DETERMINISTIC", "0"),
     }
     for name in ("TRAIN_PROCESSES", "LORA_R", "LORA_ALPHA"):
         if not settings[name].isdigit() or int(settings[name]) < 1:
@@ -543,7 +545,18 @@ def _training_settings() -> dict[str, str]:
         raise ValueError("LORA_DROPOUT must be in [0, 1)")
     if not settings["LORA_TARGET_MODULES"].strip():
         raise ValueError("LORA_TARGET_MODULES must not be empty")
-    for name in ("USE_AMP", "EARLY_STOP_ON_CV_OVERFIT", "FP16", "TRUST_RESUME_STATE"):
+    if (
+        not settings["TRAIN_SEED"].isdigit()
+        or int(settings["TRAIN_SEED"]) > 2**63 - 1
+    ):
+        raise ValueError("TRAIN_SEED must be an integer between 0 and 2^63 - 1")
+    for name in (
+        "USE_AMP",
+        "EARLY_STOP_ON_CV_OVERFIT",
+        "FP16",
+        "TRUST_RESUME_STATE",
+        "DETERMINISTIC",
+    ):
         if settings[name] not in {"0", "1"}:
             raise ValueError(f"{name} must equal 0 or 1")
     return settings
@@ -701,6 +714,8 @@ def _train() -> None:
         os.environ["MAX_EPOCH"],
         "--learning_rate",
         os.environ["LEARNING_RATE"],
+        "--seed",
+        settings["TRAIN_SEED"],
         "--lora-r",
         settings["LORA_R"],
         "--lora-alpha",
@@ -716,6 +731,8 @@ def _train() -> None:
         command.append("--use_amp")
     if settings["EARLY_STOP_ON_CV_OVERFIT"] == "1":
         command.append("--early-stop-on-cv-overfit")
+    if settings["DETERMINISTIC"] == "1":
+        command.append("--deterministic")
     if os.environ["TRAIN_ENGINE"] == "torch_ddp" and settings["TRAIN_PROCESSES"] == "1":
         command.extend(["--guarded-checkpoints", "--trust-model-checkpoint"])
         if settings["RESUME_FROM"]:

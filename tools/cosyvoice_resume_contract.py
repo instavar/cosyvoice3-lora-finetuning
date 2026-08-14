@@ -20,6 +20,7 @@ STATE_NAME = "training-state.json"
 RUNTIME_STATE_NAME = "runtime-state.pt"
 OPTIMIZER_STATE_NAME = "optimizer-state.pt"
 SCHEDULER_STATE_NAME = "scheduler-state.pt"
+INITIAL_ADAPTER_NAME = "initial-adapter"
 LOCK_NAME = ".instavar-training.lock"
 _CHECKPOINT_RE = re.compile(r"^resume_epoch_(\d{6})$")
 
@@ -121,6 +122,7 @@ def build_contract(
     source_files: Iterable[str | Path],
     training_config: Mapping[str, Any],
     runtime: Mapping[str, Any],
+    initial_adapter: str | Path | None = None,
 ) -> dict[str, Any]:
     inputs: dict[str, list[dict[str, Any]]] = {}
     for role, paths in sorted(data_files.items()):
@@ -134,6 +136,9 @@ def build_contract(
         "base_checkpoint": file_identity(base_checkpoint),
         "config_file": file_identity(config_file),
         "qwen_pretrain": tree_identity(qwen_pretrain) if qwen_pretrain else None,
+        "initial_adapter": (
+            initial_adapter_identity(initial_adapter) if initial_adapter else None
+        ),
         "inputs": inputs,
         "sources": [
             file_identity(path)
@@ -142,6 +147,61 @@ def build_contract(
         "training_config": canonical_value(training_config),
         "runtime": canonical_value(runtime),
     }
+
+
+def initial_adapter_identity(path: str | Path) -> dict[str, Any]:
+    identity = tree_identity(path)
+    names = {item["path"] for item in identity["files"]}
+    required = {"adapter_config.json", "adapter_model.safetensors"}
+    missing = required - names
+    ambiguous = names.intersection({"adapter_model.bin", "pytorch_model.bin"})
+    if missing:
+        raise ResumeContractError(
+            "Initial adapter omits required files: " + ", ".join(sorted(missing))
+        )
+    if ambiguous:
+        raise ResumeContractError(
+            "Initial adapter contains ambiguous model files: "
+            + ", ".join(sorted(ambiguous))
+        )
+    return identity
+
+
+def publish_initial_adapter(*, output_dir: str | Path, adapter_saver) -> Path:
+    output = _safe_directory(output_dir)
+    target = output / INITIAL_ADAPTER_NAME
+    if target.exists() or target.is_symlink():
+        raise ResumeContractError(
+            f"Refusing to overwrite or adopt initial adapter: {target}"
+        )
+    partial = output / f".{INITIAL_ADAPTER_NAME}.{os.getpid()}.partial"
+    if partial.exists() or partial.is_symlink():
+        raise ResumeContractError(f"Initial adapter partial already exists: {partial}")
+    partial.mkdir(mode=0o700)
+    published = False
+    try:
+        adapter_saver(partial)
+        initial_adapter_identity(partial)
+        for item in sorted(partial.rglob("*")):
+            if item.is_file():
+                with item.open("rb") as handle:
+                    os.fsync(handle.fileno())
+        descriptor = os.open(partial, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        partial.rename(target)
+        descriptor = os.open(output, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        published = True
+        return target
+    finally:
+        if not published and partial.exists() and not partial.is_symlink():
+            shutil.rmtree(partial)
 
 
 def contract_digest(contract: Mapping[str, Any]) -> str:

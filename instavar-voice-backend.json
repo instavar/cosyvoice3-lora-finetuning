@@ -14,6 +14,8 @@
     { "name": "TRAIN_CONFIG", "purpose": "CosyVoice3 HyperPyYAML training configuration." },
     { "name": "MAX_EPOCH", "purpose": "Explicit positive train_conf.max_epoch override applied after loading the full model config." },
     { "name": "LEARNING_RATE", "purpose": "Explicit positive LoRA optimizer learning rate." },
+    { "name": "TRAIN_SEED", "purpose": "Explicit non-negative training seed, default 1234." },
+    { "name": "DETERMINISTIC", "purpose": "Strict 0 or 1 toggle for deterministic CUDA evidence mode." },
     { "name": "TRAIN_DATA_LIST", "purpose": "Prepared CosyVoice parquet training data list." },
     { "name": "CV_DATA_LIST", "purpose": "Prepared CosyVoice parquet cross-validation data list." },
     { "name": "PREPARED_TRAIN_ROOT", "purpose": "Root containing the training data list and every referenced prepared artifact." },
