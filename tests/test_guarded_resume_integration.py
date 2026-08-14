@@ -100,6 +100,20 @@ class GuardedResumeIntegrationTests(unittest.TestCase):
         self.assertLess(publish, contract)
         self.assertLess(contract, wrap)
 
+    def test_peft_config_is_normalized_for_all_checkpoint_paths(self) -> None:
+        source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
+            encoding="utf-8"
+        )
+        contract = (ROOT / "tools" / "cosyvoice_resume_contract.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("normalize_adapter_config(tag_dir)", source)
+        self.assertEqual(contract.count("normalize_adapter_config(partial)"), 2)
+        self.assertIn(
+            'for key in ("exclude_modules", "modules_to_save", "target_modules")',
+            contract,
+        )
+
     def test_monitor_state_preserves_early_stop_history(self) -> None:
         source = (ROOT / "tools" / "train_cosyvoice3_lora.py").read_text(
             encoding="utf-8"

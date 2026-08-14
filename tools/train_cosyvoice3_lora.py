@@ -29,6 +29,7 @@ from cosyvoice_resume_contract import (
     SCHEDULER_STATE_NAME,
     acquire_output_lock,
     build_contract,
+    normalize_adapter_config,
     prune_owned_checkpoints,
     publish_checkpoint,
     publish_initial_adapter,
@@ -596,6 +597,7 @@ def save_lora_checkpoint(model, model_name, info_dict):
     peft_model = base_model.llm.model
     if hasattr(peft_model, "save_pretrained"):
         peft_model.save_pretrained(tag_dir)
+        normalize_adapter_config(tag_dir)
     else:
         raise RuntimeError("LoRA model missing save_pretrained; did you apply PEFT?")
 

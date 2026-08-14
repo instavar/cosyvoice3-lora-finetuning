@@ -18,6 +18,7 @@ from tools.cosyvoice_resume_contract import (
     epoch_checkpoint_name,
     evaluator_lora_artifact_paths,
     initial_adapter_identity,
+    normalize_adapter_config,
     prune_owned_checkpoints,
     publish_checkpoint,
     publish_initial_adapter,
@@ -76,7 +77,10 @@ class ResumeContractTests(unittest.TestCase):
 
     @staticmethod
     def _adapter_saver(directory: Path) -> None:
-        (directory / "adapter_config.json").write_text("{}\n", encoding="utf-8")
+        (directory / "adapter_config.json").write_text(
+            json.dumps({"target_modules": ["q_proj"]}) + "\n",
+            encoding="utf-8",
+        )
         (directory / "adapter_model.safetensors").write_bytes(b"adapter")
 
     @staticmethod
@@ -186,6 +190,36 @@ class ResumeContractTests(unittest.TestCase):
                 world_size=1,
                 train_engine="torch_ddp",
             )
+
+    def test_adapter_config_set_fields_are_canonicalized(self) -> None:
+        adapter = self.root / "adapter"
+        adapter.mkdir()
+        (adapter / "adapter_model.safetensors").write_bytes(b"adapter")
+        (adapter / "adapter_config.json").write_text(
+            json.dumps(
+                {
+                    "target_modules": ["v_proj", "q_proj", "k_proj"],
+                    "modules_to_save": ["z", "a"],
+                    "ordered_metadata": ["second", "first"],
+                }
+            ),
+            encoding="utf-8",
+        )
+        normalize_adapter_config(adapter)
+        config = json.loads((adapter / "adapter_config.json").read_text())
+        self.assertEqual(config["target_modules"], ["k_proj", "q_proj", "v_proj"])
+        self.assertEqual(config["modules_to_save"], ["a", "z"])
+        self.assertEqual(config["ordered_metadata"], ["second", "first"])
+
+    def test_adapter_config_rejects_duplicate_set_fields(self) -> None:
+        adapter = self.root / "duplicate-adapter"
+        adapter.mkdir()
+        (adapter / "adapter_config.json").write_text(
+            json.dumps({"target_modules": ["q_proj", "q_proj"]}),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ResumeContractError, "unique strings"):
+            normalize_adapter_config(adapter)
 
     def test_failed_initial_adapter_publication_cleans_only_its_partial(self) -> None:
         protected = self.output / "keep.txt"

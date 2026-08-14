@@ -167,6 +167,45 @@ def initial_adapter_identity(path: str | Path) -> dict[str, Any]:
     return identity
 
 
+def normalize_adapter_config(path: str | Path) -> Path:
+    directory = _safe_directory(path)
+    config_path = directory / "adapter_config.json"
+    if config_path.is_symlink() or not config_path.is_file():
+        raise ResumeContractError(f"Adapter config is missing or unsafe: {config_path}")
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ResumeContractError(f"Adapter config is not valid JSON: {config_path}") from error
+    if not isinstance(config, dict) or not config:
+        raise ResumeContractError("Adapter config must be a non-empty object")
+    for key in ("exclude_modules", "modules_to_save", "target_modules"):
+        value = config.get(key)
+        if value is None:
+            continue
+        if (
+            not isinstance(value, list)
+            or any(not isinstance(item, str) or not item for item in value)
+            or len(set(value)) != len(value)
+        ):
+            raise ResumeContractError(f"Adapter config {key} must be unique strings")
+        config[key] = sorted(value)
+    temporary = directory / f".adapter_config.{os.getpid()}.partial"
+    if temporary.exists() or temporary.is_symlink():
+        raise ResumeContractError(f"Adapter config partial already exists: {temporary}")
+    try:
+        _write_json(temporary, config)
+        temporary.replace(config_path)
+        descriptor = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    finally:
+        if temporary.exists() and not temporary.is_symlink():
+            temporary.unlink()
+    return config_path
+
+
 def publish_initial_adapter(*, output_dir: str | Path, adapter_saver) -> Path:
     output = _safe_directory(output_dir)
     target = output / INITIAL_ADAPTER_NAME
@@ -181,6 +220,7 @@ def publish_initial_adapter(*, output_dir: str | Path, adapter_saver) -> Path:
     published = False
     try:
         adapter_saver(partial)
+        normalize_adapter_config(partial)
         initial_adapter_identity(partial)
         for item in sorted(partial.rglob("*")):
             if item.is_file():
@@ -315,6 +355,7 @@ def publish_checkpoint(
     published = False
     try:
         adapter_saver(partial)
+        normalize_adapter_config(partial)
         state = {
             "schema_version": SCHEMA_VERSION,
             "completed_epoch": int(completed_epoch),
