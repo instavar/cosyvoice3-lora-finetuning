@@ -18,6 +18,8 @@ SCHEMA_VERSION = "1.0.0"
 SIDECAR_NAME = "resume-contract.json"
 STATE_NAME = "training-state.json"
 RUNTIME_STATE_NAME = "runtime-state.pt"
+OPTIMIZER_STATE_NAME = "optimizer-state.pt"
+SCHEDULER_STATE_NAME = "scheduler-state.pt"
 LOCK_NAME = ".instavar-training.lock"
 _CHECKPOINT_RE = re.compile(r"^resume_epoch_(\d{6})$")
 
@@ -374,6 +376,65 @@ def _validate_checkpoint_files(
     if not isinstance(manifest, list) or manifest != _required_manifest(checkpoint):
         raise ResumeContractError("Guarded checkpoint file identity drift detected")
     return sidecar
+
+
+def evaluator_lora_artifact_paths(checkpoint_dir: str | Path) -> dict[str, Path]:
+    """Map a new guarded LoRA checkpoint to evaluator 0.45 state roles."""
+    raw = Path(checkpoint_dir).expanduser()
+    if raw.is_symlink():
+        raise ResumeContractError("Evaluator checkpoint must not be a symlink")
+    checkpoint = raw.resolve(strict=True)
+    if not checkpoint.is_dir() or not _CHECKPOINT_RE.fullmatch(checkpoint.name):
+        raise ResumeContractError("Evaluator checkpoint must be a guarded epoch directory")
+
+    sidecar_path = checkpoint / SIDECAR_NAME
+    if sidecar_path.is_symlink() or not sidecar_path.is_file():
+        raise ResumeContractError(f"Checkpoint has no safe {SIDECAR_NAME}")
+    try:
+        sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ResumeContractError("Checkpoint sidecar is invalid JSON") from error
+    if sidecar.get("schema_version") != SCHEMA_VERSION:
+        raise ResumeContractError("Unsupported guarded checkpoint schema")
+    if sidecar.get("checkpoint_name") != checkpoint.name:
+        raise ResumeContractError("Checkpoint sidecar names a different directory")
+    manifest = sidecar.get("files")
+    if not isinstance(manifest, list) or manifest != _required_manifest(checkpoint):
+        raise ResumeContractError("Guarded checkpoint file identity drift detected")
+
+    names = {item["path"] for item in manifest}
+    required = {
+        "adapter_model.safetensors",
+        OPTIMIZER_STATE_NAME,
+        SCHEDULER_STATE_NAME,
+        STATE_NAME,
+        RUNTIME_STATE_NAME,
+    }
+    missing = sorted(required - names)
+    if missing:
+        raise ResumeContractError(
+            "Evaluator mapping omits decomposed state: " + ", ".join(missing)
+        )
+    model_candidates = sorted(
+        name
+        for name in names
+        if name in {"adapter_model.safetensors", "adapter_model.bin"}
+    )
+    if len(model_candidates) != 1:
+        raise ResumeContractError("Evaluator mapping needs exactly one adapter model state")
+
+    relative_by_role = {
+        "model_state": model_candidates[0],
+        "optimizer_state": OPTIMIZER_STATE_NAME,
+        "scheduler_state": SCHEDULER_STATE_NAME,
+        "trainer_state": STATE_NAME,
+        "rng_state": RUNTIME_STATE_NAME,
+    }
+    resolved = {role: checkpoint / name for role, name in relative_by_role.items()}
+    identities = [(path.stat().st_dev, path.stat().st_ino) for path in resolved.values()]
+    if len(identities) != len(set(identities)):
+        raise ResumeContractError("Evaluator artifact roles must not share hardlinks")
+    return resolved
 
 
 def prune_owned_checkpoints(

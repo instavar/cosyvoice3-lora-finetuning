@@ -23,7 +23,9 @@ from torch.distributed.elastic.multiprocessing.errors import record
 
 from distributed_early_stop import synchronize_early_stop
 from cosyvoice_resume_contract import (
+    OPTIMIZER_STATE_NAME,
     ResumeContractError,
+    SCHEDULER_STATE_NAME,
     acquire_output_lock,
     build_contract,
     prune_owned_checkpoints,
@@ -201,9 +203,15 @@ def save_runtime_state(path: Path, optimizer, scheduler, scaler) -> None:
         "torch_rng": torch.get_rng_state(),
         "cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
     }
-    torch.save(state, path)
-    with path.open("rb") as handle:
-        os.fsync(handle.fileno())
+    outputs = {
+        path: state,
+        path.parent / OPTIMIZER_STATE_NAME: state["optimizer"],
+        path.parent / SCHEDULER_STATE_NAME: state["scheduler"],
+    }
+    for output, value in outputs.items():
+        torch.save(value, output)
+        with output.open("rb") as handle:
+            os.fsync(handle.fileno())
 
 
 def restore_runtime_state(path: Path, optimizer, scheduler, scaler) -> None:

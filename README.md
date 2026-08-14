@@ -252,6 +252,20 @@ Each atomic `resume_epoch_NNNNNN` contains adapter bytes, optimizer, scheduler,
 AMP scaler when enabled, Python, NumPy, Torch, and CUDA RNG state, completed
 epoch and step, plus CV early-stop history.
 
+Future checkpoints also bind separate `optimizer-state.pt` and
+`scheduler-state.pt` files. Together with `adapter_model.safetensors`,
+`training-state.json`, and `runtime-state.pt`, they expose the five independent
+file roles required by Instavar Voice evaluator 0.45. The combined runtime file
+remains the guarded loader source, so older checkpoints without the decomposed
+copies still resume under their original sidecar authority.
+
+`evaluator_lora_artifact_paths(...)` rechecks the sidecar-bound live bytes and
+rejects missing decomposed state, ambiguous model files, and cross-role
+hardlinks. This instrumentation does not upgrade existing training or quality
+evidence. A fresh run pair must bind live Base, lineage, controls, and initial
+state through schema 1.1 receipts before outcome inspection. See
+[`reports/resume-evaluator-045-instrumentation-2026-08-14.md`](reports/resume-evaluator-045-instrumentation-2026-08-14.md).
+
 The selected directory must be the newest owned guarded checkpoint. Changed
 bytes, changed inputs, terminal symlinks, unowned numeric siblings, a completed
 `max_epoch`, or an already-triggered early-stop target fail before adapter or
@@ -746,7 +760,7 @@ Tools in this repo are Apache-2.0 licensed. CosyVoice itself is under the [CosyV
 
 ## Instavar Voice conformance
 
-[`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation). New lifecycle runs should use evaluator commit `8c0fb66a592c73f801a289aabd242e03a6849115` or a deliberately reviewed successor so POSIX stage timeouts clean the complete process group. This does not retroactively upgrade earlier run evidence.
+[`instavar-voice-capabilities.json`](instavar-voice-capabilities.json) records the validated PyTorch adapter and merged-weight vLLM paths, while keeping direct vLLM LoRA loading explicitly unsupported. It also freezes the shared objective and blinded-listening criteria that remain necessary before a perceptual promotion decision. CI validates the manifest against the pinned public [Instavar Voice evaluation contract](https://github.com/instavar/instavar-voice-evaluation). New lifecycle and resume-evidence runs should use evaluator commit `29c38cfd86b889abc8b79df063c817dd8f684903` or a deliberately reviewed successor so POSIX stage timeouts clean the complete process group and schema 1.1 receipts bind live conditioning artifacts. This does not retroactively upgrade earlier run evidence.
 
 The lifecycle preserves invalid generations as explicit rows, then uses
 evaluator revision `8feadf7bbda75abe1c305c63e362c41b86451cda` to bind timing,

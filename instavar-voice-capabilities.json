@@ -48,6 +48,11 @@
               "level": "repository_declared",
               "ref": "README.md#guarded-epoch-boundary-continuation",
               "claim": "New single-process torch_ddp runs can publish content-bound epoch continuation packages with optimizer, scheduler, scaler, RNG, progress, and CV monitor state."
+            },
+            {
+              "level": "repository_declared",
+              "ref": "reports/resume-evaluator-045-instrumentation-2026-08-14.md",
+              "claim": "Future checkpoints expose independent model, optimizer, scheduler, trainer, and RNG files for evaluator 0.45 while preserving legacy loading."
             }
           ],
           "boundary": "Historical checkpoint preservation does not validate the new resume contract or establish merged-runtime equivalence."
@@ -445,6 +450,7 @@
     "The corrected inference_instruct2 run produced valid WAVs but universal requested-text WER failure and frequent post-hoc exact instruction overlap; test any frontend or instruction rewrite under a new frozen plan.",
     "The early-stop helper passed a two-rank control smoke, but a real multi-rank production training run remains unverified.",
     "Guarded single-process epoch continuation has dependency-free contract coverage but no real interrupted GPU comparison.",
+    "Existing resume evidence predates evaluator 0.45 live-conditioning receipts; a fresh paired run is required for the stronger byte-exact claim tier.",
     "DeepSpeed, multi-rank, and multi-worker guarded continuation are rejected until rank-local and worker state plus collective publication are represented.",
     "Run a real PyTorch lifecycle package through managed backup and verified restore after completing model, dataset, speaker, and generated-output rights review.",
     "The 18-row split-boundary probe showed that the earlier request-seed association follows frontend request boundaries rather than text length alone. Test a per-utterance seed schedule and reset policy only after selecting a checkpoint that passes the content gate."

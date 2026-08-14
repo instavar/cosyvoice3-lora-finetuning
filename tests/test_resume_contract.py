@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
 
 from tools.cosyvoice_resume_contract import (
     LOCK_NAME,
+    OPTIMIZER_STATE_NAME,
     ResumeContractError,
+    SCHEDULER_STATE_NAME,
     acquire_output_lock,
     build_contract,
     checkpoint_children,
     epoch_checkpoint_name,
+    evaluator_lora_artifact_paths,
     prune_owned_checkpoints,
     publish_checkpoint,
     require_fresh_output,
@@ -72,6 +76,8 @@ class ResumeContractTests(unittest.TestCase):
     @staticmethod
     def _runtime_saver(path: Path) -> None:
         path.write_bytes(b"trusted-pickle-fixture")
+        (path.parent / OPTIMIZER_STATE_NAME).write_bytes(b"optimizer-fixture")
+        (path.parent / SCHEDULER_STATE_NAME).write_bytes(b"scheduler-fixture")
 
     def _checkpoint(
         self,
@@ -109,6 +115,97 @@ class ResumeContractTests(unittest.TestCase):
         self.assertEqual(selected, checkpoint)
         self.assertEqual(state["completed_epoch"], 1)
         self.assertEqual(state["monitor_state"]["cv_no_improve_epochs"], 1)
+
+    def test_evaluator_lora_artifact_roles_are_independent(self) -> None:
+        checkpoint = self._checkpoint(1)
+        artifacts = evaluator_lora_artifact_paths(checkpoint)
+        self.assertEqual(
+            {role: path.name for role, path in artifacts.items()},
+            {
+                "model_state": "adapter_model.safetensors",
+                "optimizer_state": OPTIMIZER_STATE_NAME,
+                "scheduler_state": SCHEDULER_STATE_NAME,
+                "trainer_state": "training-state.json",
+                "rng_state": "runtime-state.pt",
+            },
+        )
+
+    def test_legacy_combined_runtime_state_remains_resumable(self) -> None:
+        checkpoint = publish_checkpoint(
+            output_dir=self.output,
+            completed_epoch=1,
+            completed_step=10,
+            contract=self.contract,
+            adapter_saver=self._adapter_saver,
+            runtime_state_saver=lambda path: path.write_bytes(b"legacy-combined-state"),
+            monitor_state={"best_cv_loss": 3.0},
+        )
+        selected, _ = validate_checkpoint(
+            checkpoint,
+            output_dir=self.output,
+            expected_contract=self.contract,
+            trust_resume_state=True,
+            world_size=1,
+            train_engine="torch_ddp",
+        )
+        self.assertEqual(selected, checkpoint)
+        with self.assertRaisesRegex(ResumeContractError, "omits decomposed state"):
+            evaluator_lora_artifact_paths(checkpoint)
+
+    def test_evaluator_mapping_rejects_ambiguous_model_and_hardlinks(self) -> None:
+        def ambiguous_adapter(directory: Path) -> None:
+            self._adapter_saver(directory)
+            (directory / "adapter_model.bin").write_bytes(b"second-adapter")
+
+        ambiguous = publish_checkpoint(
+            output_dir=self.output,
+            completed_epoch=1,
+            completed_step=10,
+            contract=self.contract,
+            adapter_saver=ambiguous_adapter,
+            runtime_state_saver=self._runtime_saver,
+            monitor_state={},
+        )
+        with self.assertRaisesRegex(ResumeContractError, "exactly one adapter"):
+            evaluator_lora_artifact_paths(ambiguous)
+
+        other_output = self.root / "hardlink-output"
+        other_output.mkdir()
+        hardlink_contract = build_contract(
+            output_dir=other_output,
+            base_checkpoint=self.base,
+            config_file=self.config,
+            qwen_pretrain=self.qwen,
+            data_files={"train": [self.train_list], "cross_validation": [self.cv_list]},
+            source_files=[self.source],
+            training_config={"max_epoch": 5, "train_engine": "torch_ddp"},
+            runtime={"python": "fixture", "world_size": 1},
+        )
+
+        def hardlinked_runtime(path: Path) -> None:
+            path.write_bytes(b"runtime")
+            optimizer = path.parent / OPTIMIZER_STATE_NAME
+            optimizer.write_bytes(b"shared-state")
+            os.link(optimizer, path.parent / SCHEDULER_STATE_NAME)
+
+        hardlinked = publish_checkpoint(
+            output_dir=other_output,
+            completed_epoch=1,
+            completed_step=10,
+            contract=hardlink_contract,
+            adapter_saver=self._adapter_saver,
+            runtime_state_saver=hardlinked_runtime,
+            monitor_state={},
+        )
+        with self.assertRaisesRegex(ResumeContractError, "must not share hardlinks"):
+            evaluator_lora_artifact_paths(hardlinked)
+
+    def test_trainer_writes_decomposed_state_before_publication(self) -> None:
+        source = (
+            Path(__file__).parents[1] / "tools" / "train_cosyvoice3_lora.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("path.parent / OPTIMIZER_STATE_NAME", source)
+        self.assertIn("path.parent / SCHEDULER_STATE_NAME", source)
 
     def test_resume_requires_explicit_trust(self) -> None:
         checkpoint = self._checkpoint(1)
